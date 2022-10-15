@@ -3,14 +3,18 @@ from datetime import datetime
 import uuid
 import glob
 import os
-import shutil
 from collections import Counter
 import io
 import json
 import torch 
 from PIL import Image
+import util as u
 import ssl
 ssl._create_default_https_context = ssl._create_unverified_context
+
+################################################################################################
+#####> FOLDER MANAGEMENT
+################################################################################################
 
 TEMPLATES_FOLDER                = os.path.join("templates", "html")
 ASSETS_FOLDER                   = "assets"
@@ -20,60 +24,89 @@ STORAGE_INITIAL_IMAGE_FILE_NAME = "initial-image"
 STORAGE_RESULT_IMAGE_FILE_NAME  = "result-image"
 STORAGE_RESULT_DATA_FILE_NAME   = "result-data"
 
-def createFolderIfNotExists(path):
-	if not os.path.exists(path):
-		os.makedirs(path)
-
-def createFoldersIfNotExists(paths):
-	for path in paths:
-		createFolderIfNotExists(path)
-
-createFoldersIfNotExists([
+u.createFoldersIfNotExists([
 	TEMPLATES_FOLDER, 
 	ASSETS_FOLDER,
 	STATIC_FOLDER,
 	STORAGE_FOLDER
 ])
 
+################################################################################################
+#####> LAUNCH APP
+################################################################################################
+
 app = Flask(__name__, template_folder=TEMPLATES_FOLDER, static_folder=STATIC_FOLDER)
 
-# Delete non alpha numeric characters in a string
-def sanitizeFileName(string: str):
-	return "".join(char for char in str(string) if char.isalnum())
+################################################################################################
+#####> UTIL METHODS
+################################################################################################
+
+# Get the report data
+def getAnalysis(building_name : str, day_string : str, analysis_id : str):
+    	
+	analysis_folder_full_path = os.path.join(STORAGE_FOLDER, u.sanitizeFileName(building_name), u.sanitizeFileName(day_string), u.sanitizeFileName(analysis_id))    	
+	
+	# Result data
+	result_data_full_path = os.path.join(analysis_folder_full_path, STORAGE_RESULT_DATA_FILE_NAME + ".json")
+	with open(result_data_full_path, "r") as f:
+		analysis_data = json.load(f)
+
+	# Original & result images
+	for (analysis_file_path, analysis_file_full_path) in u.subFiles(analysis_folder_full_path):		
+		if analysis_file_path.startswith(STORAGE_INITIAL_IMAGE_FILE_NAME):
+			analysis_data["original_image"] = analysis_file_full_path
+				
+		if analysis_file_path.startswith(STORAGE_RESULT_IMAGE_FILE_NAME):
+			analysis_data["result_image"]  = analysis_file_full_path
+
+	return analysis_data
+
+################################################################################################
+#####> DELETE REQUESTS
+################################################################################################
+
+# Delete completely the file storage
+@app.route('/api/clear', methods=['DELETE'])
+def apiClear():
+    u.deleteFoldersRecursively(STORAGE_FOLDER)
+    u.createFolderIfNotExists(STORAGE_FOLDER)
+
+    return "Cleared"
+    	
+################################################################################################
+#####> POST REQUESTS
+################################################################################################
 
 # Upload the report files in the STORAGE_FOLDER
-def uploadReportFiles(building_name : str, initial_file):
+def uploadReportFiles(building_name : str, initial_file : Image):
 
-	date_time   = datetime.now()
-	date        = sanitizeFileName(date_time.strftime('%Y-%m-%d'))
-	time        = sanitizeFileName(date_time.strftime('%H-%M-%S'))
-	building_name = sanitizeFileName(building_name)
-	analysis_id = sanitizeFileName(uuid.uuid4())
+	date_time     = datetime.now()
+	date          = u.sanitizeFileName(date_time.strftime('%Y-%m-%d'))
+	time          = u.sanitizeFileName(date_time.strftime('%H-%M-%S'))
+	building_name = u.sanitizeFileName(building_name)
+	analysis_id   = u.sanitizeFileName(uuid.uuid4())
 
-	# File structure
-	extension = initial_file.filename.split(".")[-1]
+	# Create folders
+	initial_image_time_analysis_folder_path = os.path.join(STORAGE_FOLDER, building_name, date, analysis_id) 
+	result_image_time_analysis_folder_path  = os.path.join(STORAGE_FOLDER, building_name, date, analysis_id) 
+	result_data_time_analysis_folder_path   = os.path.join(STORAGE_FOLDER, building_name, date, analysis_id) 
 
-	initial_image_time_analysis_folder_path     = os.path.join(STORAGE_FOLDER, building_name, date, analysis_id) 
-	result_image_time_analysis_folder_path      = os.path.join(STORAGE_FOLDER, building_name, date, analysis_id) 
-	result_data_time_analysis_folder_path       = os.path.join(STORAGE_FOLDER, building_name, date, analysis_id) 
-	initial_image_full_path   		   = os.path.join(initial_image_time_analysis_folder_path, STORAGE_INITIAL_IMAGE_FILE_NAME + "." + extension) 
-	result_image_full_path    		   = os.path.join(result_image_time_analysis_folder_path,  STORAGE_RESULT_IMAGE_FILE_NAME  + "." + extension) 
-	result_data_full_path     		   = os.path.join(result_data_time_analysis_folder_path,   STORAGE_RESULT_DATA_FILE_NAME   + "." + "json") 
-
-	createFoldersIfNotExists([
+	u.createFoldersIfNotExists([
 		initial_image_time_analysis_folder_path,
 		result_image_time_analysis_folder_path, 
 		result_data_time_analysis_folder_path
 	])
 
-	# Save original file
+	# Create files
+	initial_image_full_path = os.path.join(initial_image_time_analysis_folder_path, STORAGE_INITIAL_IMAGE_FILE_NAME + "." + initial_file.format) 
+	result_image_full_path  = os.path.join(result_image_time_analysis_folder_path,  STORAGE_RESULT_IMAGE_FILE_NAME  + "." + initial_file.format) 
+	result_data_full_path   = os.path.join(result_data_time_analysis_folder_path,   STORAGE_RESULT_DATA_FILE_NAME   + "." + "json") 
+
+	# Save original image
 	initial_file.save(initial_image_full_path)
 
 	# Make prediction
-	img          = Image.open(initial_image_full_path)
-	results      = model([img])
-
-	# Box info
+	results         = model([initial_file])
 	results_data    = results.pandas().xyxy[0]
 	predictions_nb  = results_data.shape[0]
 	predictions_json = {
@@ -101,10 +134,11 @@ def uploadReportFiles(building_name : str, initial_file):
 		]
 	}
 	
+	# Save result data
 	with open(result_data_full_path, 'w') as f:
 		f.write(json.dumps(predictions_json, indent=4))
 
-	# Image
+	# Save result image
 	result_img   = results.render()[0]
 	result_file  = Image.fromarray(result_img)
 	result_file.save(result_image_full_path)
@@ -112,32 +146,9 @@ def uploadReportFiles(building_name : str, initial_file):
 	# Return full paths
 	return getAnalysis(building_name, date, analysis_id)
 
-# Get the report data
-def getAnalysis(building_name, day_string, analysis_id):
-    	
-	analysis_folder_full_path = os.path.join(STORAGE_FOLDER, sanitizeFileName(building_name), sanitizeFileName(day_string), sanitizeFileName(analysis_id))    	
-	
-	# Result data
-	result_data_full_path = os.path.join(analysis_folder_full_path, STORAGE_RESULT_DATA_FILE_NAME + ".json")
-	with open(result_data_full_path, "r") as f:
-		analysis_data = json.load(f)
-
-	# Images
-	for analysis_file_path in os.listdir(analysis_folder_full_path):
-		analysis_file_full_path = os.path.join(analysis_folder_full_path, analysis_file_path)
-		if os.path.isfile(analysis_file_full_path):
-			
-			if analysis_file_path.startswith(STORAGE_INITIAL_IMAGE_FILE_NAME):
-				analysis_data["original_image"] = analysis_file_full_path
-					
-			if analysis_file_path.startswith(STORAGE_RESULT_IMAGE_FILE_NAME):
-				analysis_data["result_image"]  = analysis_file_full_path
-
-	return analysis_data
-
 # Do a building analysis concerning an image
-@app.route('/api/analyse/<building_name>')
-def apiAnalyse(building_name : str):
+@app.route('/api/upload/from-body/<building_name>', methods=['POST'])
+def apiUploadFromBody(building_name : str):
 
 	# Requests
 	files = list(request.files.items())
@@ -145,30 +156,46 @@ def apiAnalyse(building_name : str):
 		return "No file found..."
 
 	# Upload files
-	results = dict()
-	for file_name, file_content in files:
-		result = uploadReportFiles(building_name, file_content)
-		results[file_name] = result
+	return { upload_body_name: uploadReportFiles(building_name, Image.open(upload_image_content.stream)) for upload_body_name, upload_image_content in files }
 
-	return results
+@app.route('/api/upload/from-storage/<building_name>', methods=['POST'])
+def apiUploadFromStorage(building_name : str):
+
+	# Requests
+
+	if not("folder_path" in request.form):
+		return "No args folder_path found..."
+
+	folder_path = request.form["folder_path"]
+	if not(os.path.isdir(folder_path)):
+		return f'"{folder_path}" is not a folder...'
+
+	files = u.subFiles(folder_path)
+	if len(files) == 0:
+		return "No file found..."
+
+	# Upload files
+	return { upload_image_path: uploadReportFiles(building_name, Image.open(upload_image_full_path)) for (upload_image_path, upload_image_full_path) in u.subFiles(folder_path) }	
+
+################################################################################################
+#####> GET REQUESTS
+################################################################################################
 
 # See the results of a previous analysis
-@app.route('/report/<building_name>/<day_string>')
-def apiReportView(building_name : str, day_string : str):
+@app.route('/report/<building_name>/<day_string>', methods=['GET'])
+def report(building_name : str, day_string : str):
 
 	analysis_results = []
 
 	# Foreach analysis
-	main_directory = os.path.join(STORAGE_FOLDER, sanitizeFileName(building_name), sanitizeFileName(day_string))
+	main_directory = os.path.join(STORAGE_FOLDER, u.sanitizeFileName(building_name), u.sanitizeFileName(day_string))
 	
-	for analysis_folder_path in os.listdir(main_directory):
-		analysis_folder_full_path = os.path.join(main_directory, analysis_folder_path)
-		if os.path.isdir(analysis_folder_full_path):
+	for (analysis_folder_name, analysis_folder_full_path) in u.subFolders(main_directory):
 			
-			# One analysis
-			analysis_id = analysis_folder_path
-			analysis_data = getAnalysis(building_name, day_string, analysis_id)
-			analysis_results.append(analysis_data)
+		# One analysis
+		analysis_id = analysis_folder_name
+		analysis_data = getAnalysis(building_name, day_string, analysis_id)
+		analysis_results.append(analysis_data)
 
 	class_name_predictions = [ prediction_data["class"]["name"] for analysis_data in analysis_results for prediction_data in analysis_data["predictions"] ]
 	class_name_counter     = Counter(class_name_predictions)
@@ -182,43 +209,36 @@ def apiReportView(building_name : str, day_string : str):
 		class_name_frequency=class_name_frequency
 	)
 
-# Delete completely the file storage
-@app.route('/api/clear')
-def apiClear():
-    shutil.rmtree(STORAGE_FOLDER)
-    createFolderIfNotExists(STORAGE_FOLDER)
-
-    return "Cleared"
-
-@app.route('/')
+@app.route('/', methods=['GET'])
 def home():
     	
 	reports = []
 
 	# For each buildings
 	main_directory = STORAGE_FOLDER
-	for building_path in os.listdir(main_directory):
-		building_full_path = os.path.join(main_directory, building_path)
-		if os.path.isdir(building_full_path):
-			building_name = building_path
 
-			# For each dates
-			for date_path in os.listdir(building_full_path):
-				date_full_path = os.path.join(building_full_path, date_path)
-				if os.path.isdir(date_full_path):
-					day_string = date_path
+	for (building_path, building_full_path) in u.subFolders(main_directory):
+		building_name = building_path
 
-					# Add an entry
-					reports.append({
-						"building_name" : building_name,
-						"date"          : day_string,
-						"link"          : url_for("apiReportView", building_name=building_name, day_string=day_string)
-					})
+		# For each dates
+		for (date_path, date_full_path) in u.subFolders(building_full_path):
+			day_string = date_path
+
+			# Add an entry
+			reports.append({
+				"building_name" : building_name,
+				"date"          : day_string,
+				"link"          : url_for("apiReportView", building_name=building_name, day_string=day_string)
+			})
 
 	return render_template(
 		"pages/home.html",
 		reports=reports
 	)
+
+################################################################################################
+#####> LAUNCH SERVER
+################################################################################################
 
 if __name__ == '__main__':
 	
