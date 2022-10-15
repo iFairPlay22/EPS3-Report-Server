@@ -1,0 +1,54 @@
+{% extends 'base/base.html' %}
+ 
+{% block title %}Report{% endblock %}
+
+{% block css %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/report.css') }}">
+{% endblock %}
+
+{% block body %}
+    <div class="report-title">
+        <h1>REPORT for building "{{building}}" at date "{{date}}"</h1>
+    </div>
+
+    <div class="report-issues-frequency">
+        <h2>Buildings issues frequency</h2>
+
+        {% for class_name in class_name_frequency %}
+            <ul>
+                <li>
+                    {{ class_name }} : {{ class_name_frequency[class_name] }} %
+                </li>
+            </ul>
+        {% endfor %}
+    </div>
+
+    <div class="report-issues-list">
+        <h2>Buildings issues list</h2>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Analysis id</th>
+                    <th>Original image</th>
+                    <th>Result image</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for analysis_data in analysis %}
+                    <tr>
+                        <td>
+                            {{ analysis_data.metadata.analysis_id }}
+                        </td>
+                        <td>
+                            <img src="/{{ analysis_data.original_image }}" alt="Original image" width="200" height="200"> 
+                        </td>
+                        <td>
+                            <img src="/{{ analysis_data.result_image }}" alt="Result image" width="200" height="200">
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

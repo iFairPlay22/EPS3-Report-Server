@@ -4,6 +4,13 @@
 
 {% block body %}
     <p>
-        MAIN PAGE
+        HOME
     </p>
+    <ul>       
+        {% for report in reports %}
+            <li>
+                <a href="{{ report.link }}"> {{ report.building_name }} {{ report.date }} </a>
+            </li>
+        {% endfor %}
+    </ul>
 {% endblock %}
