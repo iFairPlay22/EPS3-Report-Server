@@ -15,8 +15,8 @@
         <h2>Buildings issues frequency</h2>
 
         {% for class_name in class_name_frequency %}
-            <ul>
-                <li>
+            <ul class="list-group">
+                <li class="list-group-item">
                     {{ class_name }} : {{ class_name_frequency[class_name] }} %
                 </li>
             </ul>
@@ -62,31 +62,31 @@
     <div class="report-analysys-list">
         <h2>Buildings analysys list</h2>
 
-        <table>
+        <table class="table">
             <thead>
                 <tr>
-                    <th>Analysis id</th>
-                    <th>Original image</th>
-                    <th>Result image</th>
-                    <th>Issues</th>
+                    <th scope="col">Analysis id</th>
+                    <th scope="col">Original image</th>
+                    <th scope="col">Result image</th>
+                    <th scope="col">Issues</th>
                 </tr>
             </thead>
             <tbody>
                 {% for analysis_data in analysis %}
                     <tr>
-                        <td>
+                        <td scope="row">
                             {{ analysis_data.metadata.analysis_id }}
                         </td>
-                        <td>
+                        <td scope="row">
                             <img src="/{{ analysis_data.original_image }}" alt="Original image" width="200" height="200"> 
                         </td>
-                        <td>
+                        <td scope="row">
                             <img src="/{{ analysis_data.result_image }}" alt="Result image" width="200" height="200">
                         </td>
-                        <td>
-                            <ul>
+                        <td scope="row">
+                            <ul class="list-group">
                                 {% for prediction_data in analysis_data.predictions %}
-                                    <li>
+                                    <li class="list-group-item">
                                         "{{ prediction_data.class.name }}" with fiability of {{ prediction_data.confidence }}%
                                     </li>
                                 {% endfor %}
