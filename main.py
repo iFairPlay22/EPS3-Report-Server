@@ -1,10 +1,8 @@
 from flask import Flask, redirect, url_for, request, render_template
 from datetime import datetime
 import uuid
-import glob
 import os
 from collections import Counter
-import io
 import json
 import torch 
 from PIL import Image
@@ -43,7 +41,7 @@ app = Flask(__name__, template_folder=TEMPLATES_FOLDER, static_folder=STATIC_FOL
 
 # Get the report data
 def getAnalysis(building_name : str, day_string : str, analysis_id : str):
-    	
+		
 	analysis_folder_full_path = os.path.join(STORAGE_FOLDER, u.sanitizeFileName(building_name), u.sanitizeFileName(day_string), u.sanitizeFileName(analysis_id))    	
 	
 	# Result data
@@ -68,23 +66,25 @@ def getAnalysis(building_name : str, day_string : str, analysis_id : str):
 # Delete completely the file storage
 @app.route('/api/clear', methods=['DELETE'])
 def apiClear():
-    u.deleteFoldersRecursively(STORAGE_FOLDER)
-    u.createFolderIfNotExists(STORAGE_FOLDER)
+	u.deleteFoldersRecursively(STORAGE_FOLDER)
+	u.createFolderIfNotExists(STORAGE_FOLDER)
 
-    return "Cleared"
-    	
+	return "Cleared"
+		
 ################################################################################################
 #####> POST REQUESTS
 ################################################################################################
 
 # Upload the report files in the STORAGE_FOLDER
-def uploadReportFiles(building_name : str, initial_file : Image):
+def uploadReportFiles(data : str, initial_file : Image):
 
 	date_time     = datetime.now()
 	date          = u.sanitizeFileName(date_time.strftime('%Y-%m-%d'))
 	time          = u.sanitizeFileName(date_time.strftime('%H-%M-%S'))
-	building_name = u.sanitizeFileName(building_name)
 	analysis_id   = u.sanitizeFileName(uuid.uuid4())
+	building_name = u.sanitizeFileName(data["building_name"])
+	row 		  = int(data["row"])
+	column 		  = int(data["column"])
 
 	# Create folders
 	initial_image_time_analysis_folder_path = os.path.join(STORAGE_FOLDER, building_name, date, analysis_id) 
@@ -112,13 +112,15 @@ def uploadReportFiles(building_name : str, initial_file : Image):
 	predictions_json = {
 		"metadata": {
 			"building_name": str(building_name),
-			"day":           str(date),
-			"time":          str(time),
-			"analysis_id":   str(analysis_id)
+			"day"          : str(date),
+			"time"         : str(time),
+			"analysis_id"  : str(analysis_id),
+			"column"       : str(column),
+			"row"          : str(row)
 		},
 		"predictions": [
 			{
-				"confidence": float(results_data.confidence[i]),
+				"confidence": int(float(results_data.confidence[i]) * 100),
 				"class": {
 					"id"  : int(results_data["class"][i]),
 					"name": str(results_data.name[i]),
@@ -155,14 +157,36 @@ def apiUploadFromBody(building_name : str):
 	if len(files) == 0:
 		return "No file found..."
 
-	# Upload files
-	return { upload_body_name: uploadReportFiles(building_name, Image.open(upload_image_content.stream)) for upload_body_name, upload_image_content in files }
+	if not("row" in request.form):
+		return 'Missing parameter "row"'
+
+	if not("column" in request.form):
+		return 'Missing parameter "column"'
+
+	# Result
+	# We assume that:
+	# > each "row"     match the serie "0", "1", "2", "3", ..., "r"
+	# > each "column"  match the serie "0", "1", "2", "3", ..., "r"
+	# > ("0", "0") is the bottom left corner of the wall
+	# > ("r", "c") is the top right corner of the wall
+	result = {}
+
+	for upload_body_name, upload_image_content in files:
+		result[upload_body_name] = uploadReportFiles(
+			{
+				"building_name": str(building_name),
+				"row"          : int(request.form["row"]),
+				"column"       : int(request.form["column"])
+			}, 
+			Image.open(upload_image_content.stream)
+		) 
+
+	return result
 
 @app.route('/api/upload/from-storage/<building_name>', methods=['POST'])
 def apiUploadFromStorage(building_name : str):
 
 	# Requests
-
 	if not("folder_path" in request.form):
 		return "No args folder_path found..."
 
@@ -174,8 +198,32 @@ def apiUploadFromStorage(building_name : str):
 	if len(files) == 0:
 		return "No file found..."
 
-	# Upload files
-	return { upload_image_path: uploadReportFiles(building_name, Image.open(upload_image_full_path)) for (upload_image_path, upload_image_full_path) in u.subFiles(folder_path) }	
+	# Result
+	# We assume that:
+	# > each subfolder named "0", "1", "2", "3", ..., "r" corresponds to the row    "0", "1", "2", "3", ..., "r"
+	# > each file      named "0", "1", "2", "3", ..., "c" corresponds to the column "0", "1", "2", "3", ..., "c"
+	# > ("0", "0") is the bottom left corner of the wall
+	# > ("r", "c") is the top right corner of the wall
+	result = {}
+
+	row = 0
+	for (row_folder_path, row_folder_full_path) in u.subFolders(folder_path):
+		column = 0
+		for (col_image_path, col_image_full_path) in u.subFiles(row_folder_full_path):
+    			
+			result[col_image_full_path] = uploadReportFiles(
+				{
+					"building_name": str(building_name),
+					"row"          : row,
+					"column"       : column
+				}, 
+				Image.open(col_image_full_path)
+			) 
+			column += 1
+		row += 1
+		
+
+	return result
 
 ################################################################################################
 #####> GET REQUESTS
@@ -197,21 +245,43 @@ def report(building_name : str, day_string : str):
 		analysis_data = getAnalysis(building_name, day_string, analysis_id)
 		analysis_results.append(analysis_data)
 
+	# Building issues frequency
 	class_name_predictions = [ prediction_data["class"]["name"] for analysis_data in analysis_results for prediction_data in analysis_data["predictions"] ]
 	class_name_counter     = Counter(class_name_predictions)
 	class_name_frequency   = { class_name : float(iterations / len(class_name_predictions)) for class_name, iterations in class_name_counter.items() }
+	
+	# Building big image
+	column_row_image_list = [
+		{
+			"column"              : int(analysis_data["metadata"]["column"]),
+			"row"                 : int(analysis_data["metadata"]["row"]),
+			"original_image_path" : str(analysis_data["original_image"]),
+			"result_image_path"   : str(analysis_data["result_image"])
+		}
+		for analysis_data in analysis_results 
+	]
+	max_row         = max([ el["row"]    for el in column_row_image_list ]) 
+	max_column      = max([ el["column"] for el in column_row_image_list ])
+	big_original_image_matrix  = [ [ None for j in range(max_column + 1) ]  for i in range(max_row + 1) ]
+	big_result_image_matrix    = [ [ None for j in range(max_column + 1) ]  for i in range(max_row + 1) ]
+	for el in column_row_image_list:
+		big_original_image_matrix[max_row-el["row"]][el["column"]] = el["original_image_path"]
+	for el in column_row_image_list:
+		big_result_image_matrix[max_row-el["row"]][el["column"]]   = el["result_image_path"]
 	
 	return render_template(
 		"pages/report.html",
 		building=building_name,
 		date=day_string,
 		analysis=analysis_results,
-		class_name_frequency=class_name_frequency
+		class_name_frequency=class_name_frequency,
+		big_original_image_matrix=big_original_image_matrix,
+		big_result_image_matrix=big_result_image_matrix
 	)
 
 @app.route('/', methods=['GET'])
 def home():
-    	
+		
 	reports = []
 
 	# For each buildings
@@ -236,6 +306,16 @@ def home():
 		reports=reports
 	)
 
+@app.route('/api/duplicates/folder', methods=['GET'])
+def apiGetDuplicatesOfFolder():
+		
+	return u.getDuplicatedFilesInFolder(request.form["folder"])
+
+@app.route('/api/duplicates/folders', methods=['GET'])
+def apiGetDuplicatesOfFolders():
+		
+	return u.getFilesInF2ThatAlsoAreInF1(request.form["folder1"], request.form["folder2"])
+	
 ################################################################################################
 #####> LAUNCH SERVER
 ################################################################################################
