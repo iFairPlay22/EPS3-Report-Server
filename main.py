@@ -40,10 +40,10 @@ app = Flask(__name__, template_folder=TEMPLATES_FOLDER, static_folder=STATIC_FOL
 ################################################################################################
 
 # Get the report data
-def getAnalysis(building_name : str, day_string : str, analysis_id : str):
+def getAnalysis(building_name : str, day_string : str, row : int, column : int):
 		
-	analysis_folder_full_path = os.path.join(STORAGE_FOLDER, u.sanitizeFileName(building_name), u.sanitizeFileName(day_string), u.sanitizeFileName(analysis_id))    	
-	
+	analysis_folder_full_path = os.path.join(STORAGE_FOLDER, u.sanitizeFileName(building_name), u.sanitizeFileName(day_string), u.sanitizeFileName(row), u.sanitizeFileName(column))
+
 	# Result data
 	result_data_full_path = os.path.join(analysis_folder_full_path, STORAGE_RESULT_DATA_FILE_NAME + ".json")
 	with open(result_data_full_path, "r") as f:
@@ -81,26 +81,20 @@ def uploadReportFiles(data : str, initial_file : Image):
 	date_time     = datetime.now()
 	date          = u.sanitizeFileName(date_time.strftime('%Y-%m-%d'))
 	time          = u.sanitizeFileName(date_time.strftime('%H-%M-%S'))
-	analysis_id   = u.sanitizeFileName(uuid.uuid4())
 	building_name = u.sanitizeFileName(data["building_name"])
-	row 		  = int(data["row"])
-	column 		  = int(data["column"])
+	row 		  = u.sanitizeFileName(int(data["row"]))
+	column 		  = u.sanitizeFileName(int(data["column"]))
 
-	# Create folders
-	initial_image_time_analysis_folder_path = os.path.join(STORAGE_FOLDER, building_name, date, analysis_id) 
-	result_image_time_analysis_folder_path  = os.path.join(STORAGE_FOLDER, building_name, date, analysis_id) 
-	result_data_time_analysis_folder_path   = os.path.join(STORAGE_FOLDER, building_name, date, analysis_id) 
-
-	u.createFoldersIfNotExists([
-		initial_image_time_analysis_folder_path,
-		result_image_time_analysis_folder_path, 
-		result_data_time_analysis_folder_path
-	])
+	# Folder management
+	base_folder_path = os.path.join(STORAGE_FOLDER, building_name, date, row, column) 
+	if u.folderExists(base_folder_path):
+		raise Exception("Data already exists for the id (building_name, time, row, column)")
+	u.createFolderIfNotExists(base_folder_path)
 
 	# Create files
-	initial_image_full_path = os.path.join(initial_image_time_analysis_folder_path, STORAGE_INITIAL_IMAGE_FILE_NAME + "." + initial_file.format) 
-	result_image_full_path  = os.path.join(result_image_time_analysis_folder_path,  STORAGE_RESULT_IMAGE_FILE_NAME  + "." + initial_file.format) 
-	result_data_full_path   = os.path.join(result_data_time_analysis_folder_path,   STORAGE_RESULT_DATA_FILE_NAME   + "." + "json") 
+	initial_image_full_path = os.path.join(base_folder_path, STORAGE_INITIAL_IMAGE_FILE_NAME + "." + initial_file.format) 
+	result_image_full_path  = os.path.join(base_folder_path,  STORAGE_RESULT_IMAGE_FILE_NAME  + "." + initial_file.format) 
+	result_data_full_path   = os.path.join(base_folder_path,   STORAGE_RESULT_DATA_FILE_NAME   + "." + "json") 
 
 	# Save original image
 	initial_file.save(initial_image_full_path)
@@ -114,13 +108,12 @@ def uploadReportFiles(data : str, initial_file : Image):
 			"building_name": str(building_name),
 			"day"          : str(date),
 			"time"         : str(time),
-			"analysis_id"  : str(analysis_id),
 			"column"       : str(column),
 			"row"          : str(row)
 		},
 		"predictions": [
 			{
-				"confidence": int(float(results_data.confidence[i]) * 100),
+				"confidence": round(float(results_data.confidence[i]) * 100),
 				"class": {
 					"id"  : int(results_data["class"][i]),
 					"name": str(results_data.name[i]),
@@ -146,7 +139,7 @@ def uploadReportFiles(data : str, initial_file : Image):
 	result_file.save(result_image_full_path)
 
 	# Return full paths
-	return getAnalysis(building_name, date, analysis_id)
+	return getAnalysis(building_name, date, row, column)
 
 # Do a building analysis concerning an image
 @app.route('/api/upload/from-body/<building_name>', methods=['POST'])
@@ -194,8 +187,8 @@ def apiUploadFromStorage(building_name : str):
 	if not(os.path.isdir(folder_path)):
 		return f'"{folder_path}" is not a folder...'
 
-	files = u.subFiles(folder_path)
-	if len(files) == 0:
+	sub_folders = u.subFolders(folder_path)
+	if len(sub_folders) == 0:
 		return "No file found..."
 
 	# Result
@@ -207,7 +200,7 @@ def apiUploadFromStorage(building_name : str):
 	result = {}
 
 	row = 0
-	for (row_folder_path, row_folder_full_path) in u.subFolders(folder_path):
+	for (row_folder_path, row_folder_full_path) in sub_folders:
 		column = 0
 		for (col_image_path, col_image_full_path) in u.subFiles(row_folder_full_path):
     			
@@ -238,12 +231,12 @@ def report(building_name : str, day_string : str):
 	# Foreach analysis
 	main_directory = os.path.join(STORAGE_FOLDER, u.sanitizeFileName(building_name), u.sanitizeFileName(day_string))
 	
-	for (analysis_folder_name, analysis_folder_full_path) in u.subFolders(main_directory):
+	for (row_folder_name, row_folder_full_path) in u.subFolders(main_directory):
+		for (col_folder_name, col_folder_full_path) in u.subFolders(row_folder_full_path):
 			
-		# One analysis
-		analysis_id = analysis_folder_name
-		analysis_data = getAnalysis(building_name, day_string, analysis_id)
-		analysis_results.append(analysis_data)
+			# One analysis
+			analysis_data = getAnalysis(building_name, day_string, row_folder_name, col_folder_name)
+			analysis_results.append(analysis_data)
 
 	# Building issues frequency
 	class_name_predictions = [ prediction_data["class"]["name"] for analysis_data in analysis_results for prediction_data in analysis_data["predictions"] ]
@@ -298,7 +291,7 @@ def home():
 			reports.append({
 				"building_name" : building_name,
 				"date"          : day_string,
-				"link"          : url_for("apiReportView", building_name=building_name, day_string=day_string)
+				"link"          : url_for("report", building_name=building_name, day_string=day_string)
 			})
 
 	return render_template(

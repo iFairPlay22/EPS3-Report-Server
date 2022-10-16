@@ -3,6 +3,12 @@ import os
 import shutil
 from difPy import dif
 
+def folderExists(folder):
+    return os.path.isdir(folder)
+
+def fileExists(file):
+    return os.path.isfile(file)
+
 def subWithPredicate(folder: str, predicate: callable):
     return [ 
 		(
@@ -14,10 +20,10 @@ def subWithPredicate(folder: str, predicate: callable):
 	]
 
 def subFiles(folder: str):
-    return subWithPredicate(folder, lambda full_path: os.path.isfile(full_path))
+    return subWithPredicate(folder, lambda full_path: fileExists(full_path))
 
 def subFolders(folder: str):
-    return subWithPredicate(folder, lambda full_path: os.path.isdir(full_path))
+    return subWithPredicate(folder, lambda full_path: folderExists(full_path))
 
 def createFolderIfNotExists(path):
 	if not os.path.exists(path):
@@ -28,15 +34,15 @@ def createFoldersIfNotExists(paths):
 		createFolderIfNotExists(path)
 
 def deleteFoldersRecursively(folder):
-    if os.path.isdir(folder):
+    if folderExists(folder):
         shutil.rmtree(folder)
 
 def copyPasteFolder(src_dir, dest_dir):
-    if os.path.isdir(src_dir):
+    if folderExists(src_dir):
         shutil.copytree(src_dir, dest_dir)
 
 def deleteFile(file_full_path):
-    if os.path.isfile(file_full_path):
+    if fileExists(file_full_path):
         os.remove(file_full_path) 
 
 def deleteFiles(file_full_paths):
