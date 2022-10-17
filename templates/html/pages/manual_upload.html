@@ -1,0 +1,30 @@
+{% extends 'base/base.html' %}
+ 
+{% block title %}Report{% endblock %}
+
+{% block css %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/report.css') }}">
+{% endblock %}
+
+{% block body %}
+    <div class="manual-upload-title">
+        <h1>Manual upload<h1>
+    </div>
+
+    <div class="manual-upload-form">
+        <div class="manual-upload-file-container">
+            <label class="form-label" for="manual-upload-file-input">Image to import</label>
+            <input type="file" class="form-control" id="manual-upload-file-input" />
+        </div>
+
+        <button id="manual-file-upload-btn" class="btn btn-primary btn-block">Analyse</button>
+    </div>
+
+    <div class="manual-upload-result">
+        <img id="uploaded-image-result">
+    </div>
+{% endblock %}
+
+{% block js %}
+    <script src="{{ url_for('static', filename='js/manual_upload.js') }}"></script>
+{% endblock %}

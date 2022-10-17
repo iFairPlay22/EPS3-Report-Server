@@ -1,6 +1,6 @@
-from flask import Flask, redirect, url_for, request, render_template
+from flask import Flask, redirect, url_for, request, render_template, send_file
 from datetime import datetime
-import uuid
+import io
 import os
 from collections import Counter
 import json
@@ -75,6 +75,16 @@ def apiClear():
 #####> POST REQUESTS
 ################################################################################################
 
+def makePrediction(initial_image : Image):
+    	
+    # Make prediction
+	results         = model([initial_image])
+	results_data    = results.pandas().xyxy[0]
+	result_img_arr  = results.render()[0]
+	result_image    = Image.fromarray(result_img_arr)
+
+	return results_data, result_image
+
 # Upload the report files in the STORAGE_FOLDER
 def uploadReportFiles(data : str, initial_file : Image):
 
@@ -100,8 +110,7 @@ def uploadReportFiles(data : str, initial_file : Image):
 	initial_file.save(initial_image_full_path)
 
 	# Make prediction
-	results         = model([initial_file])
-	results_data    = results.pandas().xyxy[0]
+	results_data, result_image = makePrediction(initial_file)
 	predictions_nb  = results_data.shape[0]
 	predictions_json = {
 		"metadata": {
@@ -134,9 +143,7 @@ def uploadReportFiles(data : str, initial_file : Image):
 		f.write(json.dumps(predictions_json, indent=4))
 
 	# Save result image
-	result_img   = results.render()[0]
-	result_file  = Image.fromarray(result_img)
-	result_file.save(result_image_full_path)
+	result_image.save(result_image_full_path)
 
 	# Return full paths
 	return getAnalysis(building_name, date, row, column)
@@ -218,9 +225,30 @@ def apiUploadFromStorage(building_name : str):
 
 	return result
 
+# See the result image of a manual prediction
+@app.route('/api/manual-prediction', methods=['POST'])
+def manualPrediction():
+
+	# Requests
+	if not("file" in request.files):
+		return 'No file "file" found...'
+    
+	results_data, result_image = makePrediction(Image.open(request.files["file"].stream))
+
+	img_io = io.BytesIO()
+	result_image.save(img_io, 'JPEG', quality=70)
+	img_io.seek(0)
+	return send_file(img_io, mimetype='image/jpeg')
+
 ################################################################################################
 #####> GET REQUESTS
 ################################################################################################
+
+# Manual prediction view
+@app.route('/manual-upload', methods=['GET'])
+def manualUpload():
+	return render_template("pages/manual_upload.html")
+
 
 # See the results of a previous analysis
 @app.route('/report/<building_name>/<day_string>', methods=['GET'])
