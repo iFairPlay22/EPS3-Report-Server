@@ -1,3 +1,13 @@
-<nav class="navbar navbar-light bg-light">
-    <p>HEADER</p>
-</nav>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+
+<header>
+
+    <a href="/"><img alt="Image" id="logo" src={{ url_for('static', filename='pictures/blanc.png') }}></a>
+        <nav id="barre">
+        <ul>
+            <li><a id="button" href="/">Home</a></li>
+
+        </ul>
+    </nav>
+
+</header>
