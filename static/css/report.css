@@ -1,0 +1,92 @@
+.report-title{
+    text-align: left;
+    margin-left: 4%;
+    margin-bottom: 2%;
+    font-size: 55px;
+}
+
+#conteneur {
+    display: flex;
+    justify-content: space-around;
+    margin: 5%;
+    margin-top: 5%;
+    padding: 20px;
+    border-radius: 20px;
+}
+#lign {
+    width: 10%;
+    height: 3px;
+    margin-left: 7%;
+    background-color: black;
+}
+#conteneur:hover{
+    transform: scale(1.03);
+    transition: 0.8s;
+  	box-shadow: 6px 3px 20px dimgrey;
+
+}
+#conteneur2{
+    border-radius: 20px;
+    padding: 20px;
+
+}
+#conteneur2:hover{
+    transform: scale(1.03);
+    transition: 0.8s;
+  	box-shadow: 6px 3px 20px black;
+
+}
+.report-issues-frequency{
+
+}
+h2{
+    margin-bottom: 5%;
+    font-family: "calibri Light";
+}
+
+.big-result-image{
+    alignment: center;
+}
+
+.report-analysis-list{
+    margin: 7%;
+
+}
+.report-analysis-list h2{
+    padding: 30px;
+
+}
+
+.list-group-item{
+    alignment: center;
+}
+
+ul {
+    text-align: center;
+    margin: 20px;
+    border: none;
+}
+h1{
+    font-weight: bold;
+    animation: titre 1s;
+    font-size: 40px;
+}
+#tr1:hover{
+    background-color: #f3edef;
+    transition: 0.8s;
+}
+
+#navig{
+    alignment: left;
+    text-align: justify;
+}
+@keyframes titre {
+	from{
+		font-size :30px;
+	}
+	to{
+		font-size: 40px;
+	}
+}
+
+
