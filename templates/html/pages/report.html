@@ -8,14 +8,19 @@
 
 {% block body %}
     <div class="report-title">
-        <h1>REPORT for building "{{building}}" at date "{{date}}"</h1>
+        <h1>REPORT for building "{{building}}"</h1>
+        <div class="select">
+        <label id="list">at</label>
+            <select name="date" id="date">
+                <option value="1">{{date}}</option>
+            </select>
+        </div>
     </div>
-        <hr id="lign">
 
       <div id="conteneur">
 
-        <div class="big-original-image" id="original-image">
-        <h2>Big building original image</h2>
+          <div class="big-original-image" id="original-image">
+{#        <h2>Big building original image</h2>#}
 
         <table>
             <tbody>
@@ -32,19 +37,27 @@
         </table>
     </div>
         <div class="report-issues-frequency">
-            <h2>Buildings issues frequency</h2>
+            <h2>Building issues frequency</h2>
 
-            {% for class_name in class_name_frequency %}
-                <ul class="list-group">
-                    <li class="list-group-item">
-                        {{ class_name }} : {{ class_name_frequency[class_name] }} %
-                    </li>
-                </ul>
-            {% endfor %}
-        </div>
+                        <script src="//cdn.amcharts.com/lib/4/core.js"></script>
+                        <script src="//cdn.amcharts.com/lib/4/charts.js"></script>
+                        <div id="chartdiv"></div>
+                            <script>
+                                var chart = am4core.create("chartdiv", am4charts.PieChart);
+                                {% for class_name in class_name_frequency %}
+                                chart.data = [{"class_name": "{{ class_name }}","class_name_frequency[class_name]": {{ class_name_frequency[class_name] }}}]
+                                {% endfor %}
+
+                                var pieSeries = chart.series.push(new am4charts.PieSeries());
+                                pieSeries.dataFields.value = "class_name_frequency[class_name]";
+                                pieSeries.dataFields.category = "class_name";
+                                chart.innerRadius = am4core.percent(40);
+                                chart.legend = new am4charts.Legend();
+
+                            </script>
     </div>
-
-    <div id="conteneur">
+      </div>
+{#    <div id="conteneur">
     <div class="big-original-image">
         <h2>Big building original image</h2>
 
@@ -80,20 +93,33 @@
             </tbody>
         </table>
     </div>
-    </div>
+    </div>#}
 
 
 
     <div class="report-analysis-list" id="conteneur2" >
-        <h2>Building analysis list</h2>
+        <div id="top">
+            <h2>Building analysis list</h2>
+             <nav id="download">
+                <ul>
+                    <li><a id="button2" href="">Download</a></li>
+                </ul>
+    </nav>
+        </div>
 
-        <table class="table">
+{#        <script type="text/javascript" src="js/report.js"></script>#}
+        <table class="table" id="emp-table">
             <thead>
-                <tr>
-                    <th scope="col">Analysis id</th>
-                    <th scope="col">Original image</th>
-                    <th scope="col">Result image</th>
-                    <th scope="col">Issues</th>
+            <tr>
+                    <th col-index = 1 scope="col" class="col1">Analysis id</th>
+                    <th col-index = 2 scope="col" class="col2">Original image</th>
+                    <th col-index = 3 scope="col" class="col3">Result image</th>
+                    <th col-index = 4 scope="col">Issues <select class="table-filter" id="date2">
+                        <option value="all" >All</option>
+                        <option value="cracks" selected>Cracks</option>
+                        <option value="thermal leaks">Thermal leaks</option>
+                        <option value="molds">Molds</option>
+                    </select></th>
                 </tr>
             </thead>
             <tbody>
@@ -103,7 +129,7 @@
                             {{ analysis_data.metadata.analysis_id }}
                         </td>
                         <td scope="row">
-                            <img src="/{{ analysis_data.original_image }}" alt="Original image" width="200" height="200"> 
+                            <img src="/{{ analysis_data.original_image }}" alt="Original image" width="200" height="200">
                         </td>
                         <td scope="row">
                             <img src="/{{ analysis_data.result_image }}" alt="Result image" width="200" height="200">
@@ -111,9 +137,8 @@
                         <td scope="row">
                             <ul class="list-group">
                                 {% for prediction_data in analysis_data.predictions %}
-                                    <li class="list-group-item">
-                                        "{{ prediction_data.class.name }}" with fiability of {{ prediction_data.confidence }}%
-                                    </li>
+                                        <p id="issues">Issue : {{ prediction_data.class.name }} <br/>
+                                            Confidence : {{ prediction_data.confidence }}%</p>
                                 {% endfor %}
                             </ul>
                         </td>
@@ -121,9 +146,16 @@
                 {% endfor %}
             </tbody>
         </table>
+
+{#    <script>
+       #}{# window.onload = () => {
+            console.log(document.querySelector("#emp-table > tbody > tr:nth-child(1) > td:nth-child(4) ").innerHTML)
+            };#}{#
+    </script>#}
     </div>
 {% endblock %}
 
 {% block js %}
     <script src="{{ url_for('static', filename='js/report.js') }}"></script>
 {% endblock %}
+
