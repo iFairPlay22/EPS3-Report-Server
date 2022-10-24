@@ -1,16 +1,42 @@
 {% extends 'base/base.html' %}
  
 {% block title %}{% endblock %}
-
+{% block css %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}">
+{% endblock %}
 {% block body %}
-    <p>
-        HOME
-    </p>
-    <ul>       
+<h1>Available reports</h1>
+{#    <ul>
         {% for report in reports %}
             <li>
-                <a href="{{ report.link }}"> {{ report.building_name }} {{ report.date }} </a>
+                <a href="{{ report.link }}"> {{ report.building_name }} {{ report.date }} </a><br/>
             </li>
         {% endfor %}
-    </ul>
+    </ul>#}
+
+
+     <table class="table" id="home_table">
+            <thead>
+            <tr>
+                    <th col-index = 1 scope="col" class="col1">Date</th>
+                    <th col-index = 2 scope="col" class="col2">Building</th>
+                    <th col-index = 3 scope="col" class="col3">Report</th>
+            </tr>
+            </thead>
+
+            <tbody>
+                {% for report in reports %}
+                    <tr id="tr1">
+                        <td scope="row">
+                            {{ report.date }}
+                        </td>
+                        <td scope="row">
+                            {{ report.building_name }}</td>
+                        <td scope="row">
+                            <a href="{{ report.link }}">Report</a>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
 {% endblock %}
