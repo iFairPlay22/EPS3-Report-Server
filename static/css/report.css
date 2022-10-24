@@ -92,7 +92,8 @@ h2{
     text-align: center;
 }
 td{
-        vertical-align: middle;
+    vertical-align: middle;
+    text-align: center;
 }
 thead{
     background-color: #f6f6f8;
@@ -102,9 +103,7 @@ thead{
     text-align: center;
 
 }
-td{
-    text-align: center;
-}
+
 th{
     vertical-align: middle;
 }
