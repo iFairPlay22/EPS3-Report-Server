@@ -18,6 +18,7 @@ header{
 	border-radius: 9px;
 	border: black;
 	padding: 10px;
+	margin-top: 15px;
 	background-color: white;
 }
 #button:hover{
@@ -42,10 +43,15 @@ header{
 }
 li
 {
-	margin: 10px;
+	margin: 15px;
 	display: inline;
 	width: 250px;
 
+}
+ul {
+    text-align: center;
+    margin: 15px;
+    border: none;
 }
 @keyframes header1 {
 	from{
@@ -57,7 +63,6 @@ li
 }
 footer{
     background-color: black;
-	box-shadow: 6px 3px 30px black;
     height: 70px;
 
 }
