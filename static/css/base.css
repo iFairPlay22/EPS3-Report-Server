@@ -82,13 +82,12 @@ input, select {
 	background-color: black;
 	height: 70px;
 }
-li {
-	margin: 15px;
-	display: inline;
-	width: 250px;
+/* NAV */
+.nav-tabs .nav-link.active, .nav-tabs .show > .nav-link {
+	background-color: #444a46 !important;
+	color: white !important;
 }
-ul {
-	text-align: center;
-	margin: 15px;
-	border: none;
+.nav-tabs .nav-link, .nav-tabs .show > .nav-link {
+	background-color: transparent !important;
+	color: black !important;
 }

@@ -16,8 +16,8 @@
                 <h3>Building "{{building_name}}", at</h3>    
             </label>
             <select id="report-date-select" class="form-select d-inline mx-2">
-                {% for date in time_analysis.keys() %}
-                    <option value="{{date}}">{{date}}</option>
+                {% for date, data in time_analysis.items() %}
+                    <option value="{{date}}">{{data.readable_date}}</option>
                 {% endfor %}
             </select>
         </div>
@@ -29,17 +29,19 @@
 
         {# Big images #}
           <div class="col">
-            <div class="big-images d-flex flex-column justify-content-center align-items-center">
-                <h2>Building images</h2>
-                
-                <ul class="nav nav-pills mb-3" role="tablist">
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link active" id="big-original-image-tab" data-bs-toggle="pill" data-bs-target="#big-original-image-data" type="button" role="tab" aria-controls="big-original-image-data" aria-selected="true">Original</button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="big-annotated-image-tab" data-bs-toggle="pill" data-bs-target="#big-annotated-image-data" type="button" role="tab" aria-controls="big-annotated-image-data" aria-selected="false">Annotated</button>
-                    </li>
-                </ul>
+            <div>
+                <h2>BUILDING IMAGES</h2>
+                <hr class="line" />
+            </div>
+
+            <nav>
+                <div class="nav nav-tabs mb-3" role="tablist">
+                    <button class="nav-link active" id="big-original-image-tab" data-bs-toggle="tab" data-bs-target="#big-original-image-data" type="button" role="tab" aria-controls="big-original-image-data" aria-selected="true">Original</button>
+                    <button class="nav-link" id="big-annotated-image-tab" data-bs-toggle="tab" data-bs-target="#big-annotated-image-data" type="button" role="tab" aria-controls="big-annotated-image-data" aria-selected="false">Annotated</button>
+                </div>
+            </nav>   
+
+            <div class="d-flex flex-column justify-content-center align-items-center"> 
                 <div class="tab-content">
                     
                     <div class="tab-pane fade show active" id="big-original-image-data" role="tabpanel" aria-labelledby="big-original-image-tab">
@@ -81,8 +83,11 @@
         {# Issue frequency graph #}
           <div class="col">
             <div>
-                <h2>Building issues frequency</h2>
-                <div id="report-issues-frequency-chart" style="width:500px;height: 500px;"></div>
+                <h2>ISSUES FREQUENCY</h2>
+                <hr class="line" />
+            </div>
+            <div>
+                <div id="report-issues-frequency-chart" style="width:auto;height:60vh;"></div>
                 <meta id="report-issues-frequency-data" content='{{ time_analysis[time_chosen].class_name_frequency|tojson }}'>
             </div>
         </div>
@@ -94,37 +99,38 @@
 
     {# Analysis list #}
     <div class="container py-5">
-        <div class="row">
+        <div class="row justify-content-between">
           <div class="col">
-            <h2>Building analysis list</h2>
-            <a id="button2" href="">Download</a>
+            <div>
+                <h2>BUILDING ANALYSIS LIST</h2>
+                <hr class="line" />
+            </div>
+          </div>
+          <div class="col-5 d-flex d-row justify-content-end align-items-start">
+            <select id="report-issue-select" class="form-select mx-3">
+                <option value="all">All</option>
+                <option value="nothing">Safe</option>
+                <option value="issue">Issue</option>
+                <option value="crack">Cracks</option>
+                <option value="thermal-leak">Thermal leaks</option>
+                <option value="mold">Molds</option>
+            </select>
+            <btn id="analysis-table-download-btn" class="btn btn-primary">Download</btn>
           </div>
         </div>
         <div class="row">
             <div class="col">
-                <table class="table" id="emp-table">
+                <table class="table">
                     <thead>
                         <tr>
-                            <th col-index = 1 scope="col" class="col1">Analysis id</th>
-                            <th col-index = 2 scope="col" class="col2">Original image</th>
-                            <th col-index = 3 scope="col" class="col3">Result image</th>
-                            <th col-index = 4 scope="col">
-                                Issues 
-                                <select class="table-filter" id="date2">
-                                    <option value="all" >All</option>
-                                    <option value="cracks" selected>Cracks</option>
-                                    <option value="thermal leaks">Thermal leaks</option>
-                                    <option value="molds">Molds</option>
-                                </select>
-                            </th>
+                            <th col-index="1" scope="col">Original image</th>
+                            <th col-index="2" scope="col">Result image</th>
+                            <th col-index="4" scope="col">Issues</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="analysis-table-tbody">
                         {% for analysis_data in time_analysis[time_chosen].analysis_results %}
-                            <tr id="tr1">
-                                <td scope="row">
-                                    {{ analysis_data.metadata.analysis_id }}
-                                </td>
+                            <tr>
                                 <td scope="row">
                                     <img src="/{{ analysis_data.original_image }}" alt="Original image" width="200" height="200">
                                 </td>
@@ -132,14 +138,11 @@
                                     <img src="/{{ analysis_data.result_image }}" alt="Result image" width="200" height="200">
                                 </td>
                                 <td scope="row">
-                                    <ul class="list-group">
-                                        {% for prediction_data in analysis_data.predictions %}
-                                            <p id="issues">
-                                                Issue : {{ prediction_data.class.name }} <br/>
-                                                Confidence : {{ prediction_data.confidence }}%
-                                            </p>
-                                        {% endfor %}
-                                    </ul>
+                                    {% for class_name, nb in analysis_data.issues_nb.items() %}
+                                        <p class="issue_class" class_name="{{class_name}}">
+                                            {{ class_name }} ({{ nb }}) 
+                                        </p>
+                                    {% endfor %}
                                 </td>
                             </tr>
                         {% endfor %}

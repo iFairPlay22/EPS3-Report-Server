@@ -175,7 +175,8 @@ def uploadReportFiles(data : str, initial_file : Image):
 				}
 			}
 			for i in range(predictions_nb)
-		]
+		],
+		"issues_nb": dict(Counter(results_data.name))
 	}
 	
 	# Save result data
@@ -284,6 +285,9 @@ def manualPrediction():
 #####> GET REQUESTS
 ################################################################################################
 
+def getReadableDate(storageDate):
+    return datetime.strptime(storageDate, '%Y%m%d').date().strftime('%d/%m/%Y')
+
 # Manual prediction view
 @app.route('/manual-upload', methods=['GET'])
 def manualUpload():
@@ -301,6 +305,7 @@ def report(building_name : str):
 		day_string = date_file_path
 		analysis_results, class_name_frequency, big_original_image_matrix, big_result_image_matrix = getAnalysis(building_name, day_string)
 		time_analysis[day_string] = {
+			"readable_date"				: getReadableDate(day_string),
 			"analysis_results"          : analysis_results,
 			"class_name_frequency"      : class_name_frequency,
 			"big_original_image_matrix" : big_original_image_matrix,
