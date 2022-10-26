@@ -28,7 +28,7 @@
         <div class="row">
 
         {# Big images #}
-          <div class="col">
+          <div class="col-12 col-md-6 pt-5">
             <div>
                 <h2>BUILDING IMAGES</h2>
                 <hr class="line" />
@@ -81,16 +81,16 @@
           </div>
 
         {# Issue frequency graph #}
-          <div class="col">
-            <div>
-                <h2>ISSUES FREQUENCY</h2>
-                <hr class="line" />
+            <div class="col-12 col-md-6 pt-5">
+                <div>
+                    <h2>ISSUES FREQUENCY</h2>
+                    <hr class="line" />
+                </div>
+                <div>
+                    <div id="report-issues-frequency-chart" style="width:auto;height:60vh;"></div>
+                    <meta id="report-issues-frequency-data" content='{{ time_analysis[time_chosen].class_name_frequency|tojson }}'>
+                </div>
             </div>
-            <div>
-                <div id="report-issues-frequency-chart" style="width:auto;height:60vh;"></div>
-                <meta id="report-issues-frequency-data" content='{{ time_analysis[time_chosen].class_name_frequency|tojson }}'>
-            </div>
-        </div>
 
         </div>
     </div>
@@ -100,13 +100,13 @@
     {# Analysis list #}
     <div class="container py-5">
         <div class="row justify-content-between">
-          <div class="col">
+          <div class="col-12 col-md-6">
             <div>
                 <h2>BUILDING ANALYSIS LIST</h2>
                 <hr class="line" />
             </div>
           </div>
-          <div class="col-5 d-flex d-row justify-content-end align-items-start">
+          <div class="col-12 col-md-12 d-flex d-row justify-content-end align-items-start">
             <select id="report-issue-select" class="form-select mx-3">
                 <option value="all">All</option>
                 <option value="nothing">Safe</option>
