@@ -1,6 +1,4 @@
-console.log("Hello manual_upload.js!")
-
-$(document).ready(function(){
+$(document).ready(() => {
     
     $("#manual-file-upload-btn").click(() => {
 

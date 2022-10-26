@@ -1,42 +1,89 @@
 {% extends 'base/base.html' %}
  
-{% block title %}{% endblock %}
+{% block title %}Home{% endblock %}
+
 {% block css %}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}">
 {% endblock %}
+
 {% block body %}
-<h1>Available reports</h1>
-{#    <ul>
-        {% for report in reports %}
-            <li>
-                <a href="{{ report.link }}"> {{ report.building_name }} {{ report.date }} </a><br/>
-            </li>
-        {% endfor %}
-    </ul>#}
 
+    <div class="my-5 pt-5">
+        <h1>HIGHFLYER</h1>
+        <h3>Make your building sustainable again</h3>
+    </div>
 
-     <table class="table" id="home_table">
-            <thead>
-            <tr>
-                    <th col-index = 1 scope="col" class="col1">Date</th>
-                    <th col-index = 2 scope="col" class="col2">Building</th>
-                    <th col-index = 3 scope="col" class="col3">Report</th>
-            </tr>
-            </thead>
+    <div class="container py-5">
+        <div class="row">
+          <div class="col">
+            <div class="title-description">
+                <h2>STRUCTURAL DEFECTS</h2>
+                <hr class="line" />
+                <p>Let us detect cracks, molds and blisters to ensure the entire safety of your building. Our autonomous tool gives us the access to each place of your building.</p>
+            </div>
+          </div>
+          <div class="col">
+            <img src="{{ url_for('static', filename='pictures/cracks_img.jpg') }}" alt="Building with cracks" class="home-img" />
+          </div>
+        </div>
+    </div>
 
-            <tbody>
-                {% for report in reports %}
-                    <tr id="tr1">
-                        <td scope="row">
-                            {{ report.date }}
-                        </td>
-                        <td scope="row">
-                            {{ report.building_name }}</td>
-                        <td scope="row">
-                            <a href="{{ report.link }}">Report</a>
-                        </td>
+    <hr>
+
+    <div class="container py-5">
+        <div class="row">
+          <div class="col">
+            <img src="{{ url_for('static', filename='pictures/thermal_img.jpg') }}" alt="Building image with thermal camera" id="crack" class="home-img"/>
+          </div>
+          <div class="col">
+            <div class="title-description">
+                <h2>THERMAL LEAKS</h2>
+                <hr class="line" />
+                <p>Your building may not be energy efficient enough anymore. Our expertise will give you a precise idea of the thermal health of your building.</p>
+            </div>
+          </div>
+        </div>
+    </div>
+
+    <hr>
+
+    <div class="container py-5">
+        <div class="row">
+          <div class="col">
+            <div class="title-description">
+                <h2>AVAILABLE REPORTS</h2>
+                <hr class="line" />
+                <p>See the results of the last analysis done by our drone.</p>
+            </div>
+          </div>
+          <div class="col">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th col-index="1" scope="col" class="col2">Building</th>
+                        <th col-index="2" scope="col" class="col3">Report</th>
                     </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                </thead>
+
+                <tbody>
+                    {% for report in reports %}
+                        <tr id="tr1">
+                            <td scope="row">
+                                {{ report.building_name }}</td>
+                            <td scope="row">
+                                <a href="{{ report.link }}">Report</a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+          </div>
+        </div>
+    </div>
+
+{% endblock %}
+
+
+{% block js %}
+    <script src="{{ url_for('static', filename='js/home.js') }}"></script>
 {% endblock %}

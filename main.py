@@ -312,7 +312,8 @@ def report(building_name : str):
 	return render_template(
 		"pages/report.html",
 		time_analysis=time_analysis,
-		time_chosen=selected_time
+		time_chosen=selected_time,
+  		building_name=building_name
 	)
 
 @app.route('/', methods=['GET'])
@@ -336,7 +337,7 @@ def home():
 		"pages/home.html",
 		reports=reports
 	)
-
+ 
 @app.route('/api/duplicates/folder', methods=['GET'])
 def apiGetDuplicatesOfFolder():
 		
@@ -346,11 +347,6 @@ def apiGetDuplicatesOfFolder():
 def apiGetDuplicatesOfFolders():
 		
 	return u.getFilesInF2ThatAlsoAreInF1(request.form["folder1"], request.form["folder2"])
-
-
-@app.route("/index.html")
-def index():
-    return render_template("pages/index.html")
 
 
 ################################################################################################

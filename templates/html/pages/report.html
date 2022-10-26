@@ -8,11 +8,14 @@
 
 {% block body %}
 
-    <div class="report-title">
-        <h1>REPORT for building "{{building}}"</h1>
-        <div class="select">
-        <label id="list">at</label>
-            <select name="date" id="date">
+    {# Report title + Time select #}
+    <div class="my-5 pt-5 d-flex flex-column flex-justify-center align-items-center">
+        <h1>REPORT</h1>
+        <div>
+            <label>
+                <h3>Building "{{building_name}}", at</h3>    
+            </label>
+            <select id="report-date-select" class="form-select d-inline mx-2">
                 {% for date in time_analysis.keys() %}
                     <option value="{{date}}">{{date}}</option>
                 {% endfor %}
@@ -20,129 +23,130 @@
         </div>
     </div>
 
-    <div id="conteneur">
-        <div class="big-original-image" id="original-image">
-            <h2>Building image</h2>
-            
-            <ul class="nav nav-pills mb-3" role="tablist">
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link active" id="big-original-image-tab" data-bs-toggle="pill" data-bs-target="#big-original-image-data" type="button" role="tab" aria-controls="big-original-image-data" aria-selected="true">Original</button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="big-annotated-image-tab" data-bs-toggle="pill" data-bs-target="#big-annotated-image-data" type="button" role="tab" aria-controls="big-annotated-image-data" aria-selected="false">Annotated</button>
-                </li>
-              </ul>
-              <div class="tab-content">
+    {# Big images + Graph #}
+    <div class="container py-5">
+        <div class="row">
+
+        {# Big images #}
+          <div class="col">
+            <div class="big-images d-flex flex-column justify-content-center align-items-center">
+                <h2>Building images</h2>
                 
-                <div class="tab-pane fade show active" id="big-original-image-data" role="tabpanel" aria-labelledby="big-original-image-tab">
-                    <table>
-                        <tbody>
-                            {% for original_image_row in time_analysis[time_chosen].big_original_image_matrix %}
-                                <tr>
-                                    {% for original_image_column in original_image_row %}
-                                        <td>
-                                            <img src="/{{ original_image_column }}" alt="" width="200" height="200">
-                                        </td>
-                                    {% endfor %}
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                <ul class="nav nav-pills mb-3" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="big-original-image-tab" data-bs-toggle="pill" data-bs-target="#big-original-image-data" type="button" role="tab" aria-controls="big-original-image-data" aria-selected="true">Original</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="big-annotated-image-tab" data-bs-toggle="pill" data-bs-target="#big-annotated-image-data" type="button" role="tab" aria-controls="big-annotated-image-data" aria-selected="false">Annotated</button>
+                    </li>
+                </ul>
+                <div class="tab-content">
+                    
+                    <div class="tab-pane fade show active" id="big-original-image-data" role="tabpanel" aria-labelledby="big-original-image-tab">
+                        <table>
+                            <tbody>
+                                {% for original_image_row in time_analysis[time_chosen].big_original_image_matrix %}
+                                    <tr>
+                                        {% for original_image_column in original_image_row %}
+                                            <td>
+                                                <img src="/{{ original_image_column }}" alt="" width="200" height="200">
+                                            </td>
+                                        {% endfor %}
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+    
+                    <div class="tab-pane fade" id="big-annotated-image-data" role="tabpanel" aria-labelledby="big-annotated-image-tab">
+                        <table>
+                            <tbody>
+                                {% for result_image_row in time_analysis[time_chosen].big_result_image_matrix %}
+                                    <tr>
+                                        {% for result_image_column in result_image_row %}
+                                            <td>
+                                                <img src="/{{ result_image_column }}" alt="" width="200" height="200">
+                                            </td>
+                                        {% endfor %}
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+    
                 </div>
+            </div>
+          </div>
 
-                <div class="tab-pane fade" id="big-annotated-image-data" role="tabpanel" aria-labelledby="big-annotated-image-tab">
-                    <table>
-                        <tbody>
-                            {% for result_image_row in time_analysis[time_chosen].big_result_image_matrix %}
-                                <tr>
-                                    {% for result_image_column in result_image_row %}
-                                        <td>
-                                            <img src="/{{ result_image_column }}" alt="" width="200" height="200">
-                                        </td>
-                                    {% endfor %}
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-
+        {# Issue frequency graph #}
+          <div class="col">
+            <div>
+                <h2>Building issues frequency</h2>
+                <div id="report-issues-frequency-chart" style="width:500px;height: 500px;"></div>
+                <meta id="report-issues-frequency-data" content='{{ time_analysis[time_chosen].class_name_frequency|tojson }}'>
             </div>
         </div>
 
-        <div class="report-issues-frequency">
-            <h2>Building issues frequency</h2>
-
-            <script src="//cdn.amcharts.com/lib/4/core.js"></script>
-            <script src="//cdn.amcharts.com/lib/4/charts.js"></script>
-            <div id="chartdiv"></div>
-            <script>
-                var chart = am4core.create("chartdiv", am4charts.PieChart);
-                {% for class_name in time_analysis[time_chosen].class_name_frequency %}
-                    chart.data = [{"class_name": "{{ class_name }}","frequency": {{ time_analysis[time_chosen].class_name_frequency[class_name] }}}]
-                {% endfor %}
-
-                var pieSeries = chart.series.push(new am4charts.PieSeries());
-                pieSeries.dataFields.value = "frequency";
-                pieSeries.dataFields.category = "class_name";
-                chart.innerRadius = am4core.percent(40);
-                chart.legend = new am4charts.Legend();
-            </script>
         </div>
     </div>
 
-    <div class="report-analysis-list" id="conteneur2" >
-        <div id="top">
-            <h2>Building analysis list</h2>
-            <nav id="download">
-                <ul>
-                    <li><a id="button2" href="">Download</a></li>
-                </ul>
-            </nav>
-        </div>
+    <hr>
 
-        <table class="table" id="emp-table">
-            <thead>
-                <tr>
-                    <th col-index = 1 scope="col" class="col1">Analysis id</th>
-                    <th col-index = 2 scope="col" class="col2">Original image</th>
-                    <th col-index = 3 scope="col" class="col3">Result image</th>
-                    <th col-index = 4 scope="col">
-                        Issues 
-                        <select class="table-filter" id="date2">
-                            <option value="all" >All</option>
-                            <option value="cracks" selected>Cracks</option>
-                            <option value="thermal leaks">Thermal leaks</option>
-                            <option value="molds">Molds</option>
-                        </select>
-                    </th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for analysis_data in time_analysis[time_chosen].analysis_results %}
-                    <tr id="tr1">
-                        <td scope="row">
-                            {{ analysis_data.metadata.analysis_id }}
-                        </td>
-                        <td scope="row">
-                            <img src="/{{ analysis_data.original_image }}" alt="Original image" width="200" height="200">
-                        </td>
-                        <td scope="row">
-                            <img src="/{{ analysis_data.result_image }}" alt="Result image" width="200" height="200">
-                        </td>
-                        <td scope="row">
-                            <ul class="list-group">
-                                {% for prediction_data in analysis_data.predictions %}
-                                    <p id="issues">
-                                        Issue : {{ prediction_data.class.name }} <br/>
-                                        Confidence : {{ prediction_data.confidence }}%
-                                    </p>
-                                {% endfor %}
-                            </ul>
-                        </td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    {# Analysis list #}
+    <div class="container py-5">
+        <div class="row">
+          <div class="col">
+            <h2>Building analysis list</h2>
+            <a id="button2" href="">Download</a>
+          </div>
+        </div>
+        <div class="row">
+            <div class="col">
+                <table class="table" id="emp-table">
+                    <thead>
+                        <tr>
+                            <th col-index = 1 scope="col" class="col1">Analysis id</th>
+                            <th col-index = 2 scope="col" class="col2">Original image</th>
+                            <th col-index = 3 scope="col" class="col3">Result image</th>
+                            <th col-index = 4 scope="col">
+                                Issues 
+                                <select class="table-filter" id="date2">
+                                    <option value="all" >All</option>
+                                    <option value="cracks" selected>Cracks</option>
+                                    <option value="thermal leaks">Thermal leaks</option>
+                                    <option value="molds">Molds</option>
+                                </select>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for analysis_data in time_analysis[time_chosen].analysis_results %}
+                            <tr id="tr1">
+                                <td scope="row">
+                                    {{ analysis_data.metadata.analysis_id }}
+                                </td>
+                                <td scope="row">
+                                    <img src="/{{ analysis_data.original_image }}" alt="Original image" width="200" height="200">
+                                </td>
+                                <td scope="row">
+                                    <img src="/{{ analysis_data.result_image }}" alt="Result image" width="200" height="200">
+                                </td>
+                                <td scope="row">
+                                    <ul class="list-group">
+                                        {% for prediction_data in analysis_data.predictions %}
+                                            <p id="issues">
+                                                Issue : {{ prediction_data.class.name }} <br/>
+                                                Confidence : {{ prediction_data.confidence }}%
+                                            </p>
+                                        {% endfor %}
+                                    </ul>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 {% endblock %}
 

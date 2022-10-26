@@ -1,68 +1,94 @@
-header{
-    padding: 10px;
-    display: flex;
+/* TITLES */
+h1 {
+	color : #1c1c21;
+	text-align: center;
+	font-family: Castellar, serif;
+	font-size: 85px;
+	scroll-behavior: smooth;
+	animation: h1-animation 1s;
+}
+@keyframes h1-animation  {
+	from{
+		font-size :75px;
+	}
+	to{
+		font-size: 85px;
+	}
+}
+h2 {
+	font-family: calibri;
+	font-weight: bold;
+	color : #1c1c21;
+}
+h3 {
+	color : #1c1c21;
+	text-align: center;
+	font-family: calibri;
+	font-size: 27px;
+	font-weight: lighter;
+	font-style: italic;
+}
+/* DESCRIPTION */
+.title-description {
+	color : #444a46;
+	text-align: justify;
+  }
+/* LINE */
+.line {
+	color:#092063;
+	background-color: #092063;
+	width: 20%;
+	height: 3px;
+	margin-left: 40px;
+	margin-bottom: 5%;
+  }
+/* PAGE */
+body {
+	margin:0;
+	font-family: calibri;
+	font-size: 25px;
+	background-color: #f6f6f8;
+	scroll-behavior: smooth;
+}
+/* FORM */
+input, select {
+	background-color: #f6f6f8 !important;
+}
+/* HEADER */
+#app-header {
+	padding: 10px;
+	display: flex;
 	height: 80px;
 	color: black;
 	justify-content: space-between;
 	flex-wrap: nowrap;
-    background-color: #1c1c21;
-    margin-bottom: 2%;
-    animation: header1 1s;
+	background-color: #1c1c21;
+	margin-bottom: 2%;
+	animation: header-animation 1s;
 }
-#button
-{
-	text-decoration: none;
-	font-size: 20px;
-	justify-content: center;
-	color:#315a89;
-	border-radius: 9px;
-	border: black;
-	padding: 10px;
-	margin-top: 15px;
-	background-color: white;
+@keyframes header-animation {
+	from{
+		height : 75px;
+   }
+	to{
+		height : 80px;
+   }
 }
-#button:hover{
-	background-color: white;
-	color: #315a89;
-	padding:13px ;
-	border-radius: 15px;
-	transition: 0.5s;
-    font-weight: bold;
-
+#app-header-logo {
+	width: 60px;
 }
-#logo{
-    width: 60px;
+/* FOOTER */
+#app-footer{
+	background-color: black;
+	height: 70px;
 }
-
-#barre
-{
-	display: inline-flex;
-	text-align: right;
-	margin-right: 5px;
-	justify-content: space-between;
-}
-li
-{
+li {
 	margin: 15px;
 	display: inline;
 	width: 250px;
-
 }
 ul {
-    text-align: center;
-    margin: 15px;
-    border: none;
-}
-@keyframes header1 {
-	from{
-		height :60px;
-	}
-	to{
-		height: 80px;
-	}
-}
-footer{
-    background-color: black;
-    height: 70px;
-
+	text-align: center;
+	margin: 15px;
+	border: none;
 }
