@@ -3,57 +3,127 @@
     margin-left: 4%;
     margin-bottom: 2%;
     font-size: 55px;
+    color: #505a72;
 }
 
+body{
+    color : #505a72
+}
+#date{
+    padding:9px 30px 9px 24px;
+    border-radius: 25px;
+    background-color: #f6f6f8;
+    font-size: 15px;
+    border : none;
+    cursor: pointer;
+}
+#date2{
+    padding:9px 20px 9px 14px;
+    border-radius: 25px;
+    background-color: #f6f6f8;
+    font-size: 15px;
+    border : solid 1px grey;
+    margin-left: 20px;
+}
+
+#chartdiv{
+    margin-top: 15%;
+    width: 600px;
+    height: 400px;
+}
+option{
+
+}
+#list{
+    font-size: 20px;
+    margin-right:30px;
+    margin-top: 0;
+}
+#thedate{
+    font-size: 15px;
+}
 #conteneur {
     display: flex;
     justify-content: space-around;
-    margin: 5%;
-    margin-top: 5%;
+    margin-left: 5%;
+    margin-right: 5%;
+    margin-bottom:0;
+    margin-top: 1%;
     padding: 20px;
     border-radius: 20px;
 }
-#lign {
-    width: 10%;
-    height: 3px;
-    margin-left: 7%;
-    background-color: black;
-}
-#conteneur:hover{
-    transform: scale(1.03);
-    transition: 0.8s;
-  	box-shadow: 6px 3px 20px dimgrey;
 
-}
 #conteneur2{
     border-radius: 20px;
     padding: 20px;
-
+    border : solid 3px #ececec;
 }
-#conteneur2:hover{
-    transform: scale(1.03);
-    transition: 0.8s;
-  	box-shadow: 6px 3px 20px black;
-
+#top{
+    display: flex;
+    justify-content: space-between;
+	flex-wrap: nowrap;
 }
-.report-issues-frequency{
-
+#download{
+    margin-bottom: 1px;
+}
+#button2
+{
+    text-decoration: none;
+	font-size: 20px;
+	justify-content: center;
+	color:white;
+	border-radius: 9px;
+	border: black;
+	padding: 10px;
+	background-color: #315a89;
+}
+#button2:hover{
+	background-color: white;
+	color: #315a89;
+	border : solid  #315a89;
+	padding:13px ;
+	border-radius: 15px;
+	transition: 0.5s;
 }
 h2{
-    margin-bottom: 5%;
-    font-family: "calibri Light";
+    margin-bottom: 3%;
+    font-family: calibri;
+    font-weight: bold;
+    text-align: center;
+}
+td{
+    vertical-align: middle;
+    text-align: center;
+}
+thead{
+    background-color: #f6f6f8;
+    border : solid #f6f6f8;
+    border-radius: 30px;
+    color: #505a72;
+    text-align: center;
+
 }
 
+th{
+    vertical-align: middle;
+}
+
+#issues{
+    text-align: center;
+    margin: 5%;
+    line-height: 200%;
+    font-weight: bold;
+    color: #505a72;
+}
 .big-result-image{
     alignment: center;
 }
 
 .report-analysis-list{
-    margin: 7%;
-
+    margin: 4%;
 }
 .report-analysis-list h2{
-    padding: 30px;
+    padding-left: 30px;
 
 }
 
@@ -63,7 +133,7 @@ h2{
 
 ul {
     text-align: center;
-    margin: 20px;
+    margin: 15px;
     border: none;
 }
 h1{
@@ -72,7 +142,7 @@ h1{
     font-size: 40px;
 }
 #tr1:hover{
-    background-color: #f3edef;
+    background-color: #f6f6f8;
     transition: 0.8s;
 }
 
@@ -80,6 +150,7 @@ h1{
     alignment: left;
     text-align: justify;
 }
+
 @keyframes titre {
 	from{
 		font-size :30px;
@@ -88,5 +159,8 @@ h1{
 		font-size: 40px;
 	}
 }
+
+
+
 
 

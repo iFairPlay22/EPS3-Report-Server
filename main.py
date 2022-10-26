@@ -343,7 +343,13 @@ def apiGetDuplicatesOfFolder():
 def apiGetDuplicatesOfFolders():
 		
 	return u.getFilesInF2ThatAlsoAreInF1(request.form["folder1"], request.form["folder2"])
-	
+
+
+@app.route("/index.html")
+def index():
+    return render_template("pages/index.html")
+
+
 ################################################################################################
 #####> LAUNCH SERVER
 ################################################################################################
