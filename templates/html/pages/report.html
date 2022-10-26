@@ -7,123 +7,118 @@
 {% endblock %}
 
 {% block body %}
+
     <div class="report-title">
         <h1>REPORT for building "{{building}}"</h1>
         <div class="select">
         <label id="list">at</label>
             <select name="date" id="date">
-                <option value="1">{{date}}</option>
+                {% for date in time_analysis.keys() %}
+                    <option value="{{date}}">{{date}}</option>
+                {% endfor %}
             </select>
         </div>
     </div>
 
-      <div id="conteneur">
+    <div id="conteneur">
+        <div class="big-original-image" id="original-image">
+            <h2>Building image</h2>
+            
+            <ul class="nav nav-pills mb-3" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="big-original-image-tab" data-bs-toggle="pill" data-bs-target="#big-original-image-data" type="button" role="tab" aria-controls="big-original-image-data" aria-selected="true">Original</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="big-annotated-image-tab" data-bs-toggle="pill" data-bs-target="#big-annotated-image-data" type="button" role="tab" aria-controls="big-annotated-image-data" aria-selected="false">Annotated</button>
+                </li>
+              </ul>
+              <div class="tab-content">
+                
+                <div class="tab-pane fade show active" id="big-original-image-data" role="tabpanel" aria-labelledby="big-original-image-tab">
+                    <table>
+                        <tbody>
+                            {% for original_image_row in time_analysis[time_chosen].big_original_image_matrix %}
+                                <tr>
+                                    {% for original_image_column in original_image_row %}
+                                        <td>
+                                            <img src="/{{ original_image_column }}" alt="" width="200" height="200">
+                                        </td>
+                                    {% endfor %}
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
 
-          <div class="big-original-image" id="original-image">
-{#        <h2>Big building original image</h2>#}
+                <div class="tab-pane fade" id="big-annotated-image-data" role="tabpanel" aria-labelledby="big-annotated-image-tab">
+                    <table>
+                        <tbody>
+                            {% for result_image_row in time_analysis[time_chosen].big_result_image_matrix %}
+                                <tr>
+                                    {% for result_image_column in result_image_row %}
+                                        <td>
+                                            <img src="/{{ result_image_column }}" alt="" width="200" height="200">
+                                        </td>
+                                    {% endfor %}
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
 
-        <table>
-            <tbody>
-                {% for original_image_row in big_original_image_matrix %}
-                    <tr>
-                        {% for original_image_column in original_image_row %}
-                            <td>
-                                <img src="/{{ original_image_column }}" alt="" width="200" height="200">
-                            </td>
-                        {% endfor %}
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+            </div>
+        </div>
+
         <div class="report-issues-frequency">
             <h2>Building issues frequency</h2>
 
-                        <script src="//cdn.amcharts.com/lib/4/core.js"></script>
-                        <script src="//cdn.amcharts.com/lib/4/charts.js"></script>
-                        <div id="chartdiv"></div>
-                            <script>
-                                var chart = am4core.create("chartdiv", am4charts.PieChart);
-                                {% for class_name in class_name_frequency %}
-                                chart.data = [{"class_name": "{{ class_name }}","class_name_frequency[class_name]": {{ class_name_frequency[class_name] }}}]
-                                {% endfor %}
-
-                                var pieSeries = chart.series.push(new am4charts.PieSeries());
-                                pieSeries.dataFields.value = "class_name_frequency[class_name]";
-                                pieSeries.dataFields.category = "class_name";
-                                chart.innerRadius = am4core.percent(40);
-                                chart.legend = new am4charts.Legend();
-
-                            </script>
-    </div>
-      </div>
-{#    <div id="conteneur">
-    <div class="big-original-image">
-        <h2>Big building original image</h2>
-
-        <table>
-            <tbody>
-                {% for original_image_row in big_original_image_matrix %}
-                    <tr>
-                        {% for original_image_column in original_image_row %}
-                            <td>
-                                <img src="/{{ original_image_column }}" alt="" width="200" height="200">
-                            </td>
-                        {% endfor %}
-                    </tr>
+            <script src="//cdn.amcharts.com/lib/4/core.js"></script>
+            <script src="//cdn.amcharts.com/lib/4/charts.js"></script>
+            <div id="chartdiv"></div>
+            <script>
+                var chart = am4core.create("chartdiv", am4charts.PieChart);
+                {% for class_name in time_analysis[time_chosen].class_name_frequency %}
+                    chart.data = [{"class_name": "{{ class_name }}","frequency": {{ time_analysis[time_chosen].class_name_frequency[class_name] }}}]
                 {% endfor %}
-            </tbody>
-        </table>
+
+                var pieSeries = chart.series.push(new am4charts.PieSeries());
+                pieSeries.dataFields.value = "frequency";
+                pieSeries.dataFields.category = "class_name";
+                chart.innerRadius = am4core.percent(40);
+                chart.legend = new am4charts.Legend();
+            </script>
+        </div>
     </div>
-
-    <div class="big-result-image">
-        <h2>Big building result image</h2>
-
-        <table>
-            <tbody>
-                {% for result_image_row in big_result_image_matrix %}
-                    <tr>
-                        {% for result_image_column in result_image_row %}
-                            <td>
-                                <img src="/{{ result_image_column }}" alt="" width="200" height="200">
-                            </td>
-                        {% endfor %}
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    </div>#}
-
-
 
     <div class="report-analysis-list" id="conteneur2" >
         <div id="top">
             <h2>Building analysis list</h2>
-             <nav id="download">
+            <nav id="download">
                 <ul>
                     <li><a id="button2" href="">Download</a></li>
                 </ul>
-    </nav>
+            </nav>
         </div>
 
-{#        <script type="text/javascript" src="js/report.js"></script>#}
         <table class="table" id="emp-table">
             <thead>
-            <tr>
+                <tr>
                     <th col-index = 1 scope="col" class="col1">Analysis id</th>
                     <th col-index = 2 scope="col" class="col2">Original image</th>
                     <th col-index = 3 scope="col" class="col3">Result image</th>
-                    <th col-index = 4 scope="col">Issues <select class="table-filter" id="date2">
-                        <option value="all" >All</option>
-                        <option value="cracks" selected>Cracks</option>
-                        <option value="thermal leaks">Thermal leaks</option>
-                        <option value="molds">Molds</option>
-                    </select></th>
+                    <th col-index = 4 scope="col">
+                        Issues 
+                        <select class="table-filter" id="date2">
+                            <option value="all" >All</option>
+                            <option value="cracks" selected>Cracks</option>
+                            <option value="thermal leaks">Thermal leaks</option>
+                            <option value="molds">Molds</option>
+                        </select>
+                    </th>
                 </tr>
             </thead>
             <tbody>
-                {% for analysis_data in analysis %}
+                {% for analysis_data in time_analysis[time_chosen].analysis_results %}
                     <tr id="tr1">
                         <td scope="row">
                             {{ analysis_data.metadata.analysis_id }}
@@ -137,8 +132,10 @@
                         <td scope="row">
                             <ul class="list-group">
                                 {% for prediction_data in analysis_data.predictions %}
-                                        <p id="issues">Issue : {{ prediction_data.class.name }} <br/>
-                                            Confidence : {{ prediction_data.confidence }}%</p>
+                                    <p id="issues">
+                                        Issue : {{ prediction_data.class.name }} <br/>
+                                        Confidence : {{ prediction_data.confidence }}%
+                                    </p>
                                 {% endfor %}
                             </ul>
                         </td>
@@ -146,12 +143,6 @@
                 {% endfor %}
             </tbody>
         </table>
-
-{#    <script>
-       #}{# window.onload = () => {
-            console.log(document.querySelector("#emp-table > tbody > tr:nth-child(1) > td:nth-child(4) ").innerHTML)
-            };#}{#
-    </script>#}
     </div>
 {% endblock %}
 

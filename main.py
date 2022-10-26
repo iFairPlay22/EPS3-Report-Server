@@ -291,13 +291,13 @@ def manualUpload():
 
 
 # See the results of a previous analysis
-@app.route('/report/<building_name>/<day_string>', methods=['GET'])
+@app.route('/report/<building_name>', methods=['GET'])
 def report(building_name : str):
     	
 	time_analysis = {}
 
 	building_folder_full_path = os.path.join(STORAGE_FOLDER, u.sanitizeFileName(building_name))
-	for (date_file_path, date_file_full_path) in u.subFiles(building_folder_full_path):		
+	for (date_file_path, date_file_full_path) in u.subFolders(building_folder_full_path):		
 		day_string = date_file_path
 		analysis_results, class_name_frequency, big_original_image_matrix, big_result_image_matrix = getAnalysis(building_name, day_string)
 		time_analysis[day_string] = {
@@ -306,10 +306,13 @@ def report(building_name : str):
 			"big_original_image_matrix" : big_original_image_matrix,
 			"big_result_image_matrix"   : big_result_image_matrix,
 		}
+		
+	selected_time = list(time_analysis.keys())[-1]
 
 	return render_template(
 		"pages/report.html",
-		time_analysis=time_analysis
+		time_analysis=time_analysis,
+		time_chosen=selected_time
 	)
 
 @app.route('/', methods=['GET'])
