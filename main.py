@@ -40,7 +40,7 @@ app = Flask(__name__, template_folder=TEMPLATES_FOLDER, static_folder=STATIC_FOL
 ################################################################################################
 
 # Get the report data
-def getAnalysis(building_name : str, day_string : str, row : int, column : int):
+def getAnalysisForPart(building_name : str, day_string : str, row : int, column : int):
 		
 	analysis_folder_full_path = os.path.join(STORAGE_FOLDER, u.sanitizeFileName(building_name), u.sanitizeFileName(day_string), u.sanitizeFileName(row), u.sanitizeFileName(column))
 
@@ -58,6 +58,46 @@ def getAnalysis(building_name : str, day_string : str, row : int, column : int):
 			analysis_data["result_image"]  = analysis_file_full_path
 
 	return analysis_data
+
+def getAnalysis(building_name : str, day_string : str):
+    	
+	analysis_results = []
+
+	# Foreach analysis
+	main_directory = os.path.join(STORAGE_FOLDER, u.sanitizeFileName(building_name), u.sanitizeFileName(day_string))
+	
+	for (row_folder_name, row_folder_full_path) in u.subFolders(main_directory):
+		for (col_folder_name, col_folder_full_path) in u.subFolders(row_folder_full_path):
+			
+			# One analysis
+			analysis_data = getAnalysisForPart(building_name, day_string, row_folder_name, col_folder_name)
+			analysis_results.append(analysis_data)
+
+	# Building issues frequency
+	class_name_predictions = [ prediction_data["class"]["name"] for analysis_data in analysis_results for prediction_data in analysis_data["predictions"] ]
+	class_name_counter     = Counter(class_name_predictions)
+	class_name_frequency   = { class_name : float(iterations / len(class_name_predictions)) for class_name, iterations in class_name_counter.items() }
+	
+	# Building big image
+	column_row_image_list = [
+		{
+			"column"              : int(analysis_data["metadata"]["column"]),
+			"row"                 : int(analysis_data["metadata"]["row"]),
+			"original_image_path" : str(analysis_data["original_image"]),
+			"result_image_path"   : str(analysis_data["result_image"])
+		}
+		for analysis_data in analysis_results 
+	]
+	max_row         = max([ el["row"]    for el in column_row_image_list ]) 
+	max_column      = max([ el["column"] for el in column_row_image_list ])
+	big_original_image_matrix  = [ [ None for j in range(max_column + 1) ]  for i in range(max_row + 1) ]
+	big_result_image_matrix    = [ [ None for j in range(max_column + 1) ]  for i in range(max_row + 1) ]
+	for el in column_row_image_list:
+		big_original_image_matrix[max_row-el["row"]][el["column"]] = el["original_image_path"]
+	for el in column_row_image_list:
+		big_result_image_matrix[max_row-el["row"]][el["column"]]   = el["result_image_path"]
+
+	return analysis_results, class_name_frequency, big_original_image_matrix, big_result_image_matrix
 
 ################################################################################################
 #####> DELETE REQUESTS
@@ -146,7 +186,7 @@ def uploadReportFiles(data : str, initial_file : Image):
 	result_image.save(result_image_full_path)
 
 	# Return full paths
-	return getAnalysis(building_name, date, row, column)
+	return getAnalysisForPart(building_name, date, row, column)
 
 # Do a building analysis concerning an image
 @app.route('/api/upload/from-body/<building_name>', methods=['POST'])
@@ -252,52 +292,24 @@ def manualUpload():
 
 # See the results of a previous analysis
 @app.route('/report/<building_name>/<day_string>', methods=['GET'])
-def report(building_name : str, day_string : str):
+def report(building_name : str):
+    	
+	time_analysis = {}
 
-	analysis_results = []
-
-	# Foreach analysis
-	main_directory = os.path.join(STORAGE_FOLDER, u.sanitizeFileName(building_name), u.sanitizeFileName(day_string))
-	
-	for (row_folder_name, row_folder_full_path) in u.subFolders(main_directory):
-		for (col_folder_name, col_folder_full_path) in u.subFolders(row_folder_full_path):
-			
-			# One analysis
-			analysis_data = getAnalysis(building_name, day_string, row_folder_name, col_folder_name)
-			analysis_results.append(analysis_data)
-
-	# Building issues frequency
-	class_name_predictions = [ prediction_data["class"]["name"] for analysis_data in analysis_results for prediction_data in analysis_data["predictions"] ]
-	class_name_counter     = Counter(class_name_predictions)
-	class_name_frequency   = { class_name : float(iterations / len(class_name_predictions)) for class_name, iterations in class_name_counter.items() }
-	
-	# Building big image
-	column_row_image_list = [
-		{
-			"column"              : int(analysis_data["metadata"]["column"]),
-			"row"                 : int(analysis_data["metadata"]["row"]),
-			"original_image_path" : str(analysis_data["original_image"]),
-			"result_image_path"   : str(analysis_data["result_image"])
+	building_folder_full_path = os.path.join(STORAGE_FOLDER, u.sanitizeFileName(building_name))
+	for (date_file_path, date_file_full_path) in u.subFiles(building_folder_full_path):		
+		day_string = date_file_path
+		analysis_results, class_name_frequency, big_original_image_matrix, big_result_image_matrix = getAnalysis(building_name, day_string)
+		time_analysis[day_string] = {
+			"analysis_results"          : analysis_results,
+			"class_name_frequency"      : class_name_frequency,
+			"big_original_image_matrix" : big_original_image_matrix,
+			"big_result_image_matrix"   : big_result_image_matrix,
 		}
-		for analysis_data in analysis_results 
-	]
-	max_row         = max([ el["row"]    for el in column_row_image_list ]) 
-	max_column      = max([ el["column"] for el in column_row_image_list ])
-	big_original_image_matrix  = [ [ None for j in range(max_column + 1) ]  for i in range(max_row + 1) ]
-	big_result_image_matrix    = [ [ None for j in range(max_column + 1) ]  for i in range(max_row + 1) ]
-	for el in column_row_image_list:
-		big_original_image_matrix[max_row-el["row"]][el["column"]] = el["original_image_path"]
-	for el in column_row_image_list:
-		big_result_image_matrix[max_row-el["row"]][el["column"]]   = el["result_image_path"]
-	
+
 	return render_template(
 		"pages/report.html",
-		building=building_name,
-		date=day_string,
-		analysis=analysis_results,
-		class_name_frequency=class_name_frequency,
-		big_original_image_matrix=big_original_image_matrix,
-		big_result_image_matrix=big_result_image_matrix
+		time_analysis=time_analysis
 	)
 
 @app.route('/', methods=['GET'])
@@ -311,16 +323,11 @@ def home():
 	for (building_path, building_full_path) in u.subFolders(main_directory):
 		building_name = building_path
 
-		# For each dates
-		for (date_path, date_full_path) in u.subFolders(building_full_path):
-			day_string = date_path
-
-			# Add an entry
-			reports.append({
-				"building_name" : building_name,
-				"date"          : day_string,
-				"link"          : url_for("report", building_name=building_name, day_string=day_string)
-			})
+		# Add an entry
+		reports.append({
+			"building_name" : building_name,
+			"link"          : url_for("report", building_name=building_name)
+		})
 
 	return render_template(
 		"pages/home.html",
