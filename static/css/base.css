@@ -54,6 +54,25 @@ body {
 input, select {
 	background-color: #f6f6f8 !important;
 }
+/* TABLES */
+table{
+	border : 1.5px solid #7b8090;
+}
+thead{
+	background-color: #f6f6f8;
+	color: #505a72;
+	text-align: center;
+
+}
+th, td{
+	text-align: center;
+    vertical-align: middle;
+	border: solid 1px #7b8090;
+}
+tr:hover{
+    background-color: #f6f6f8;
+    transition: 0.5s;
+}
 /* HEADER */
 #app-header {
 	padding: 10px;
