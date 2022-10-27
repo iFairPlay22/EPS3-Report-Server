@@ -6,10 +6,22 @@
     width: 150px;
 }
 
-#thermal-fixed-btn {
+#switch-camera-fixed-btn {
     position: fixed;
     top: 0px;
     right: 0px;
     margin: 15px; 
     z-index: 2;
+    background-color: #f6f6f8;
+    transition: background-color 0.2s ease-in-out;
+}
+
+#switch-camera-fixed-btn:hover {
+    position: fixed;
+    top: 0px;
+    right: 0px;
+    margin: 15px; 
+    z-index: 2;
+    background-color: #0d6efd;
+    transition: background-color 0.2s ease-in-out;
 }

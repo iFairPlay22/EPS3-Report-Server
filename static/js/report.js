@@ -168,6 +168,19 @@ $(document).ready(() => {
         window.location = $(this).val();
     })
 
+    // Switch camera fixed button
+    normalCamera = true;
+    $("#switch-camera-fixed-btn").on("click", function() {
+        normalCamera = !normalCamera;
+        if (normalCamera) {
+            $(".normal-image").removeClass("d-none")
+            $(".thermal-image").addClass("d-none")
+        } else {
+            $(".thermal-image").removeClass("d-none")
+            $(".normal-image").addClass("d-none")
+        }
+    })
+
     // Issues table filter
     $("#report-issue-select").on('change', function() {
         const class_name = this.value;

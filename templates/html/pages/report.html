@@ -8,7 +8,8 @@
 
 {% block body %}
 
-    <button id="thermal-fixed-btn" type="button" class="btn btn-outline-primary btn-rounded waves-effect">
+    {# Switch camera btn #}
+    <button id="switch-camera-fixed-btn" type="button" class="btn btn-outline-primary btn-rounded waves-effect">
         <i class="bi bi-camera-fill me-2"></i>Swich camera
     </button>
 
@@ -62,7 +63,8 @@
                                     <tr>
                                         {% for original_image_column in original_image_row %}
                                             <td>
-                                                <img src="/{{ original_image_column }}" alt="" width="200" height="200">
+                                                <img class="normal-image" src="/{{ original_image_column.normal_initial_image_path }}" alt="" width="200" height="200">
+                                                <img class="thermal-image d-none" src="/{{ original_image_column.thermal_initial_image_path }}" alt="" width="200" height="200">
                                             </td>
                                         {% endfor %}
                                     </tr>
@@ -74,11 +76,12 @@
                     <div class="tab-pane fade" id="big-annotated-image-data" role="tabpanel" aria-labelledby="big-annotated-image-tab">
                         <table>
                             <tbody>
-                                {% for result_image_row in analysis.big_result_image_matrix %}
+                                {% for original_image_row in analysis.big_original_image_matrix %}
                                     <tr>
-                                        {% for result_image_column in result_image_row %}
+                                        {% for original_image_column in original_image_row %}
                                             <td>
-                                                <img src="/{{ result_image_column }}" alt="" width="200" height="200">
+                                                <img class="normal-image" src="/{{ original_image_column.normal_result_image_path }}" alt="" width="200" height="200">
+                                                <img class="thermal-image d-none" src="/{{ original_image_column.thermal_result_image_path }}" alt="" width="200" height="200">
                                             </td>
                                         {% endfor %}
                                     </tr>
@@ -134,7 +137,7 @@
                 <table class="table my-4">
                     <thead>
                         <tr>
-                            <th col-index="1" scope="col">Original image</th>
+                            <th col-index="1" scope="col">Initial image</th>
                             <th col-index="2" scope="col">Result image</th>
                             <th col-index="4" scope="col">Issues</th>
                         </tr>
@@ -143,10 +146,12 @@
                         {% for analysis_data in analysis.analysis_results %}
                             <tr building_name="{{ building_name }}" building_row="{{ analysis_data.metadata.row }}" building_column="{{ analysis_data.metadata.column }}">
                                 <td scope="row">
-                                    <img src="/{{ analysis_data.original_image }}" alt="Original image" width="200" height="200">
+                                    <img class="normal-image" src="/{{ analysis_data.images.normal.initial }}" alt="Normal initial image" width="200" height="200">
+                                    <img class="thermal-image d-none" src="/{{ analysis_data.images.thermal.initial }}" alt="Thermal initial image" width="200" height="200">
                                 </td>
                                 <td scope="row">
-                                    <img src="/{{ analysis_data.result_image }}" alt="Result image" width="200" height="200">
+                                    <img class="normal-image" src="/{{ analysis_data.images.normal.result }}" alt="Normal result image" width="200" height="200">
+                                    <img class="thermal-image d-none" src="/{{ analysis_data.images.thermal.result }}" alt="Thermal result image" width="200" height="200">
                                 </td>
                                 <td scope="row">
                                     {% for class_name, nb in analysis_data.issues_nb.items() %}

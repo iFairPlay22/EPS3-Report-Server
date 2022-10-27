@@ -18,8 +18,11 @@ TEMPLATES_FOLDER                = os.path.join("templates", "html")
 ASSETS_FOLDER                   = "assets"
 STATIC_FOLDER                   = "static"
 STORAGE_FOLDER					= os.path.join(STATIC_FOLDER, "storage")
-STORAGE_INITIAL_IMAGE_FILE_NAME = "initial-image"
-STORAGE_RESULT_IMAGE_FILE_NAME  = "result-image"
+
+STORAGE_NORMAL_INITIAL_IMAGE_FILE_NAME = "normal-initial-image"
+STORAGE_NORMAL_RESULT_IMAGE_FILE_NAME  = "normal-result-image"
+STORAGE_THERMAL_INITIAL_IMAGE_FILE_NAME = "thermal-initial-image"
+STORAGE_THERMAL_RESULT_IMAGE_FILE_NAME  = "thermal-result-image"
 STORAGE_RESULT_DATA_FILE_NAME   = "result-data"
 
 u.createFoldersIfNotExists([
@@ -34,75 +37,160 @@ u.createFoldersIfNotExists([
 ################################################################################################
 
 app = Flask(__name__, template_folder=TEMPLATES_FOLDER, static_folder=STATIC_FOLDER)
+normal_model  = torch.hub.load('ultralytics/yolov5', 'custom', path=os.path.join(ASSETS_FOLDER, "weights/best_normal.pt" )) # , force_reload=True
+thermal_model = torch.hub.load('ultralytics/yolov5', 'custom', path=os.path.join(ASSETS_FOLDER, "weights/best_thermal.pt")) # , force_reload=True
+	
 
 ################################################################################################
 #####> UTIL METHODS
 ################################################################################################
 
-# Get the report data
-def getAnalysisForPart(building_name : str, day_string : str, row : int, column : int):
+# Make a prediction of an image thanks to a model
+def makePrediction(model, img : Image):
+    	
+    # Make prediction
+	results         = model([img])
+	results_data    = results.pandas().xyxy[0]
+	result_img_arr  = results.render()[0]
+	result_image    = Image.fromarray(result_img_arr)
+
+	# Json
+	result_predictions = [
+		{
+			"confidence": round(float(results_data.confidence[i]) * 100),
+			"class": {
+				"id"  : int(results_data["class"][i]),
+				"name": str(results_data.name[i]),
+			},
+			"box": {
+				"xmin": float(results_data.xmin[i]),
+				"ymin": float(results_data.ymin[i]),
+				"xmax": float(results_data.xmax[i]),
+				"ymax": float(results_data.ymax[i]),
+			}
+		}
+		for i in range(results_data.shape[0])
+	]
+
+	return result_image, result_predictions
+
+# Upload the report files in the STORAGE_FOLDER
+def uploadReportFiles(data : dict, initial_normal_file : Image, initial_thermal_file : Image):
+
+	date_time             = datetime.now()
+	data["date"]          = u.sanitizeFileName(date_time.strftime('%Y-%m-%d'))
+	data["time"]          = u.sanitizeFileName(date_time.strftime('%H-%M-%S'))
+	data["building_name"] = u.sanitizeFileName(data["building_name"])
+	data["row"] 		  = u.sanitizeFileName(int(data["row"]))
+	data["column"] 		  = u.sanitizeFileName(int(data["column"]))
+
+	# Base folder
+	base_folder_path = os.path.join(STORAGE_FOLDER, data["building_name"], data["date"], data["row"], data["column"]) 
+	if u.folderExists(base_folder_path):
+		raise Exception("Data already exists for the id (building_name, time, row, column)")
+	u.createFolderIfNotExists(base_folder_path)
+
+	# File names
+	normal_initial_image_full_path  = os.path.join(base_folder_path, STORAGE_NORMAL_INITIAL_IMAGE_FILE_NAME + "." + initial_normal_file.format) 
+	normal_result_image_full_path   = os.path.join(base_folder_path, STORAGE_NORMAL_RESULT_IMAGE_FILE_NAME  + "." + initial_normal_file.format)
+	thermal_initial_image_full_path = os.path.join(base_folder_path, STORAGE_THERMAL_INITIAL_IMAGE_FILE_NAME + "." + initial_thermal_file.format)
+	thermal_result_image_full_path  = os.path.join(base_folder_path, STORAGE_THERMAL_RESULT_IMAGE_FILE_NAME  + "." + initial_thermal_file.format)
+	result_data_full_path                  = os.path.join(base_folder_path, STORAGE_RESULT_DATA_FILE_NAME   + "." + "json")
+	
+	# Save original images
+	initial_normal_file.save(normal_initial_image_full_path)
+	initial_thermal_file.save(thermal_initial_image_full_path)
+
+	# Make prediction
+	normal_result_image,  normal_predictions  = makePrediction(normal_model,  initial_normal_file)
+	thermal_result_image, thermal_predictions = makePrediction(thermal_model, initial_thermal_file)
+	
+	# Merge predictions for json
+	all_predictions = normal_predictions + thermal_predictions
+	all_predictions_class_name = map(lambda pred: pred["class"]["name"], all_predictions)
+	result_json = {
+		"metadata": {
+			"building_name": str(data["building_name"]),
+			"day"          : str(data["date"]),
+			"time"         : str(data["time"]),
+			"column"       : str(data["column"]),
+			"row"          : str(data["row"])
+		},
+		"images": {
+			"normal": {
+				"initial": normal_initial_image_full_path,
+				"result" : normal_result_image_full_path
+			},
+			"thermal": {
+				"initial": thermal_initial_image_full_path,
+				"result" : thermal_result_image_full_path
+			}
+		},
+		"predictions": all_predictions,
+		"issues_nb": dict(Counter(all_predictions_class_name))
+	}
+
+	# Save result images
+	normal_result_image.save(normal_result_image_full_path)
+	thermal_result_image.save(thermal_result_image_full_path)
+
+	# Save result data
+	with open(result_data_full_path, 'w') as f:
+		f.write(json.dumps(result_json, indent=4))
+
+	# Return full paths
+	return getPartialAnalysis(data["building_name"], data["date"], data["row"], data["column"])
+
+# Get the report data for a wall cell of a building at a time
+def getPartialAnalysis(building_name : str, day_string : str, row : int, column : int):
 		
-	analysis_folder_full_path = os.path.join(STORAGE_FOLDER, u.sanitizeFileName(building_name), u.sanitizeFileName(day_string), u.sanitizeFileName(row), u.sanitizeFileName(column))
-
-	# Result data
-	result_data_full_path = os.path.join(analysis_folder_full_path, STORAGE_RESULT_DATA_FILE_NAME + ".json")
-	with open(result_data_full_path, "r") as f:
+	# Get JSON data
+	analysis_json = os.path.join(STORAGE_FOLDER, u.sanitizeFileName(building_name), u.sanitizeFileName(day_string), u.sanitizeFileName(row), u.sanitizeFileName(column), STORAGE_RESULT_DATA_FILE_NAME + ".json")
+	with open(analysis_json, "r") as f:
 		analysis_data = json.load(f)
-
-	# Original & result images
-	for (analysis_file_path, analysis_file_full_path) in u.subFiles(analysis_folder_full_path):		
-		if analysis_file_path.startswith(STORAGE_INITIAL_IMAGE_FILE_NAME):
-			analysis_data["original_image"] = analysis_file_full_path
-				
-		if analysis_file_path.startswith(STORAGE_RESULT_IMAGE_FILE_NAME):
-			analysis_data["result_image"]  = analysis_file_full_path
 
 	return analysis_data
 
-def getAnalysis(building_name : str, day_string : str):
-    	
-	analysis_results = []
+# Get the report data for a building at a time
+def getCompleteAnalysis(building_name : str, day_string : str):
 
-	# Foreach analysis
+	result = {}
+
+	# All analysis results
+	analysis_results = []
 	main_directory = os.path.join(STORAGE_FOLDER, u.sanitizeFileName(building_name), u.sanitizeFileName(day_string))
-	
 	for (row_folder_name, row_folder_full_path) in u.subFolders(main_directory):
 		for (col_folder_name, col_folder_full_path) in u.subFolders(row_folder_full_path):
-			
-			# One analysis
-			analysis_data = getAnalysisForPart(building_name, day_string, row_folder_name, col_folder_name)
-			analysis_results.append(analysis_data)
+			# An analysis result
+			analysis_results.append(getPartialAnalysis(building_name, day_string, row_folder_name, col_folder_name))
+	result["analysis_results"] = analysis_results
 
 	# Building issues frequency
 	class_name_predictions = [ prediction_data["class"]["name"] for analysis_data in analysis_results for prediction_data in analysis_data["predictions"] ]
 	class_name_counter     = Counter(class_name_predictions)
 	class_name_frequency   = { class_name : float(iterations / len(class_name_predictions)) for class_name, iterations in class_name_counter.items() }
+	result["class_name_frequency"] = class_name_frequency
 	
 	# Building big image
-	column_row_image_list = [
-		{
-			"column"              : int(analysis_data["metadata"]["column"]),
-			"row"                 : int(analysis_data["metadata"]["row"]),
-			"original_image_path" : str(analysis_data["original_image"]),
-			"result_image_path"   : str(analysis_data["result_image"])
-		}
-		for analysis_data in analysis_results 
-	]
-	max_row         = max([ el["row"]    for el in column_row_image_list ]) 
-	max_column      = max([ el["column"] for el in column_row_image_list ])
+	max_column      = max([ int(analysis_data["metadata"]["column"]) for analysis_data in analysis_results  ])
+	max_row         = max([ int(analysis_data["metadata"]["row"])    for analysis_data in analysis_results  ])
 	big_original_image_matrix  = [ [ None for j in range(max_column + 1) ]  for i in range(max_row + 1) ]
-	big_result_image_matrix    = [ [ None for j in range(max_column + 1) ]  for i in range(max_row + 1) ]
-	for el in column_row_image_list:
-		big_original_image_matrix[max_row-el["row"]][el["column"]] = el["original_image_path"]
-	for el in column_row_image_list:
-		big_result_image_matrix[max_row-el["row"]][el["column"]]   = el["result_image_path"]
+	for analysis_data in analysis_results:
+		col = int(analysis_data["metadata"]["column"])
+		row = int(analysis_data["metadata"]["row"])
 
-	return analysis_results, class_name_frequency, big_original_image_matrix, big_result_image_matrix
+		big_original_image_matrix[max_row-row][col] = {
+			"normal_initial_image_path"  : str(analysis_data["images"]["normal"]["initial"]),
+			"normal_result_image_path"   : str(analysis_data["images"]["normal"]["result"]),
+			"thermal_initial_image_path" : str(analysis_data["images"]["thermal"]["initial"]),
+			"thermal_result_image_path"  : str(analysis_data["images"]["thermal"]["result"]),
+		}
+	result["big_original_image_matrix"] = big_original_image_matrix
 
-def getReadableDate(storageDate : str):
-    return datetime.strptime(storageDate, '%Y%m%d').date().strftime('%d/%m/%Y')
+	return result
 
-def getAnalysisDatesOfBuilding(building_name : str):
+# Get all the analysis dates of a bulding 
+def getAllAnalysisDatesOfBuilding(building_name : str):
     return [ 
 		{
 			"human"    : getReadableDate(date_file_path),
@@ -111,6 +199,10 @@ def getAnalysisDatesOfBuilding(building_name : str):
 		for (date_file_path, date_file_full_path) 
 		in u.subFolders(os.path.join(STORAGE_FOLDER, u.sanitizeFileName(building_name)))
 	]
+
+# Get a readable data from the storage date
+def getReadableDate(storageDate : str):
+    return datetime.strptime(storageDate, '%Y%m%d').date().strftime('%d/%m/%Y')
 
 ################################################################################################
 #####> DELETE REQUESTS
@@ -128,88 +220,16 @@ def apiClear():
 #####> POST REQUESTS
 ################################################################################################
 
-def makePrediction(initial_image : Image):
-    	
-    # Make prediction
-	results         = model([initial_image])
-	results_data    = results.pandas().xyxy[0]
-	result_img_arr  = results.render()[0]
-	result_image    = Image.fromarray(result_img_arr)
-
-	return results_data, result_image
-
-# Upload the report files in the STORAGE_FOLDER
-def uploadReportFiles(data : str, initial_file : Image):
-
-	date_time     = datetime.now()
-	date          = u.sanitizeFileName(date_time.strftime('%Y-%m-%d'))
-	time          = u.sanitizeFileName(date_time.strftime('%H-%M-%S'))
-	building_name = u.sanitizeFileName(data["building_name"])
-	row 		  = u.sanitizeFileName(int(data["row"]))
-	column 		  = u.sanitizeFileName(int(data["column"]))
-
-	# Folder management
-	base_folder_path = os.path.join(STORAGE_FOLDER, building_name, date, row, column) 
-	if u.folderExists(base_folder_path):
-		raise Exception("Data already exists for the id (building_name, time, row, column)")
-	u.createFolderIfNotExists(base_folder_path)
-
-	# Create files
-	initial_image_full_path = os.path.join(base_folder_path, STORAGE_INITIAL_IMAGE_FILE_NAME + "." + initial_file.format) 
-	result_image_full_path  = os.path.join(base_folder_path,  STORAGE_RESULT_IMAGE_FILE_NAME  + "." + initial_file.format) 
-	result_data_full_path   = os.path.join(base_folder_path,   STORAGE_RESULT_DATA_FILE_NAME   + "." + "json") 
-
-	# Save original image
-	initial_file.save(initial_image_full_path)
-
-	# Make prediction
-	results_data, result_image = makePrediction(initial_file)
-	predictions_nb  = results_data.shape[0]
-	predictions_json = {
-		"metadata": {
-			"building_name": str(building_name),
-			"day"          : str(date),
-			"time"         : str(time),
-			"column"       : str(column),
-			"row"          : str(row)
-		},
-		"predictions": [
-			{
-				"confidence": round(float(results_data.confidence[i]) * 100),
-				"class": {
-					"id"  : int(results_data["class"][i]),
-					"name": str(results_data.name[i]),
-				},
-				"box": {
-					"xmin": float(results_data.xmin[i]),
-					"ymin": float(results_data.ymin[i]),
-					"xmax": float(results_data.xmax[i]),
-					"ymax": float(results_data.ymax[i]),
-				}
-			}
-			for i in range(predictions_nb)
-		],
-		"issues_nb": dict(Counter(results_data.name))
-	}
-	
-	# Save result data
-	with open(result_data_full_path, 'w') as f:
-		f.write(json.dumps(predictions_json, indent=4))
-
-	# Save result image
-	result_image.save(result_image_full_path)
-
-	# Return full paths
-	return getAnalysisForPart(building_name, date, row, column)
-
-# Do a building analysis concerning an image
+# Upload images from HTTP
 @app.route('/api/upload/from-body/<building_name>', methods=['POST'])
 def apiUploadFromBody(building_name : str):
 
 	# Requests
-	files = list(request.files.items())
-	if len(files) == 0:
-		return "No file found..."
+	if not("normal-image" in request.files):
+		return 'No normal image file found... Missing parameter "normal-image"'
+
+	if not("thermal-image" in request.files):
+		return 'No thermal image file found... Missing parameter "thermal-image"'
 
 	if not("row" in request.form):
 		return 'Missing parameter "row"'
@@ -223,20 +243,17 @@ def apiUploadFromBody(building_name : str):
 	# > each "column"  match the serie "0", "1", "2", "3", ..., "r"
 	# > ("0", "0") is the bottom left corner of the wall
 	# > ("r", "c") is the top right corner of the wall
-	result = {}
+	return uploadReportFiles(
+		{
+			"building_name": str(building_name),
+			"row"          : int(request.form["row"]),
+			"column"       : int(request.form["column"])
+		}, 
+		Image.open(request.files["normal-image"].stream), 
+		Image.open(request.files["thermal-image"].stream)
+	) 
 
-	for upload_body_name, upload_image_content in files:
-		result[upload_body_name] = uploadReportFiles(
-			{
-				"building_name": str(building_name),
-				"row"          : int(request.form["row"]),
-				"column"       : int(request.form["column"])
-			}, 
-			Image.open(upload_image_content.stream)
-		) 
-
-	return result
-
+# Upload images from FILE STORAGE
 @app.route('/api/upload/from-storage/<building_name>', methods=['POST'])
 def apiUploadFromStorage(building_name : str):
 
@@ -254,31 +271,50 @@ def apiUploadFromStorage(building_name : str):
 
 	# Result
 	# We assume that:
-	# > each subfolder named "0", "1", "2", "3", ..., "r" corresponds to the row    "0", "1", "2", "3", ..., "r"
-	# > each file      named "0", "1", "2", "3", ..., "c" corresponds to the column "0", "1", "2", "3", ..., "c"
+	# > each subfolder(1) named "0", "1", "2", "3", ..., "r" corresponds to the row    "0", "1", "2", "3", ..., "r"
+	# > each subfolder(2) named "0", "1", "2", "3", ..., "c" corresponds to the column "0", "1", "2", "3", ..., "c"
+	# > /(1)/(2)/normal.*  corresponds to the image taken with a normal camera 
+	# > /(1)/(2)/thermal.* corresponds to the image taken with a thermal camera
 	# > ("0", "0") is the bottom left corner of the wall
 	# > ("r", "c") is the top right corner of the wall
 	result = {}
 
 	row = 0
 	for (row_folder_path, row_folder_full_path) in sub_folders:
+		
 		column = 0
-		for (col_image_path, col_image_full_path) in u.subFiles(row_folder_full_path):
+		for (col_folder_path, col_folder_full_path) in u.subFolders(row_folder_full_path):
     			
+			thermalImage = None
+			normalImage  = None
+			for (col_image_path, col_image_full_path) in u.subFiles(col_folder_full_path):
+				if (col_image_path.startswith("normal")):
+					normalImage = col_image_full_path
+				if (col_image_path.startswith("thermal")):
+					thermalImage = col_image_full_path
+
+			if normalImage is None:
+				raise Exception('Missing normal image named "normal.*" in folder ' + col_folder_full_path);
+
+			if thermalImage is None:
+				raise Exception('Missing thermal image named "thermal.*" in folder ' + col_folder_full_path);
+
 			result[col_image_full_path] = uploadReportFiles(
 				{
 					"building_name": str(building_name),
 					"row"          : row,
 					"column"       : column
 				}, 
-				Image.open(col_image_full_path)
-			) 
+				Image.open(normalImage),
+				Image.open(thermalImage),
+			)
+		
 			column += 1
 		row += 1
 		
-
 	return result
 
+# TODO
 # See the result image of a manual prediction
 @app.route('/api/manual-prediction', methods=['POST'])
 def manualPrediction():
@@ -303,7 +339,7 @@ def manualPrediction():
 def manualUpload():
 	return render_template("pages/manual_upload.html")
 
-# See the results of a previous analysis
+# Historic report (historic evolution of a wall cell)
 @app.route('/historic-report/<building_name>/<row>/<column>', methods=['GET'])
 def historic_report(building_name : str, row : int, column : int):
     	
@@ -313,7 +349,7 @@ def historic_report(building_name : str, row : int, column : int):
 	building_folder_full_path = os.path.join(STORAGE_FOLDER, u.sanitizeFileName(building_name))
 	for (date_file_path, date_file_full_path) in u.subFolders(building_folder_full_path):		
 		day_string = date_file_path
-		analysis = getAnalysisForPart(building_name, day_string, row, column);
+		analysis = getPartialAnalysis(building_name, day_string, row, column);
 		day_analysis[getReadableDate(day_string)] = analysis
 
 		predictions_count = dict(Counter([ prediction["class"]["name"] for prediction in analysis["predictions"] ]))
@@ -322,23 +358,17 @@ def historic_report(building_name : str, row : int, column : int):
 	
 	return render_template("part/historic_report.html", day_analysis=day_analysis, day_predictions_count=day_predictions_count)
 
-# See the results of a previous analysis
+# Report page (report of a wall)
 @app.route('/report/<building_name>/<day_string>', methods=['GET'])
 def report(building_name : str, day_string : str = "_"):
     	
-	analysis_dates = getAnalysisDatesOfBuilding(building_name)
+	analysis_dates = getAllAnalysisDatesOfBuilding(building_name)
 
+	# Last report date by default
 	if day_string == "_":
-		# Last report date by default
 		day_string = analysis_dates[-1]["program"]
 
-	analysis_results, class_name_frequency, big_original_image_matrix, big_result_image_matrix = getAnalysis(building_name, day_string)
-	analysis = {
-		"analysis_results"          : analysis_results,
-		"class_name_frequency"      : class_name_frequency,
-		"big_original_image_matrix" : big_original_image_matrix,
-		"big_result_image_matrix"   : big_result_image_matrix,
-	}
+	analysis = getCompleteAnalysis(building_name, day_string)
 		
 	return render_template(
 		"pages/report.html",
@@ -348,6 +378,7 @@ def report(building_name : str, day_string : str = "_"):
 		analysis=analysis
 	)
 
+# Home page (company info + all reports links)
 @app.route('/', methods=['GET'])
 def home():
 		
@@ -355,7 +386,6 @@ def home():
 
 	# For each buildings
 	main_directory = STORAGE_FOLDER
-
 	for (building_path, building_full_path) in u.subFolders(main_directory):
 		building_name = building_path
 
@@ -369,23 +399,10 @@ def home():
 		"pages/home.html",
 		reports=reports
 	)
- 
-@app.route('/api/duplicates/folder', methods=['GET'])
-def apiGetDuplicatesOfFolder():
-		
-	return u.getDuplicatedFilesInFolder(request.form["folder"])
-
-@app.route('/api/duplicates/folders', methods=['GET'])
-def apiGetDuplicatesOfFolders():
-		
-	return u.getFilesInF2ThatAlsoAreInF1(request.form["folder1"], request.form["folder2"])
-
 
 ################################################################################################
 #####> LAUNCH SERVER
 ################################################################################################
 
 if __name__ == '__main__':
-	
-	model = torch.hub.load('ultralytics/yolov5', 'custom', path=os.path.join(ASSETS_FOLDER, "weights/best.pt")) # , force_reload=True
 	app.run(debug=True)
