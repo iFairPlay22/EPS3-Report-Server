@@ -163,6 +163,11 @@ function showModal(jqueryModal) {
 
 $(document).ready(() => {
 
+    // Time select 
+    $("#report-date-select").on("change", function () {
+        window.location = $(this).val();
+    })
+
     // Issues table filter
     $("#report-issue-select").on('change', function() {
         const class_name = this.value;

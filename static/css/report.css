@@ -5,3 +5,11 @@
 #report-issue-select {
     width: 150px;
 }
+
+#thermal-fixed-btn {
+    position: fixed;
+    top: 0px;
+    right: 0px;
+    margin: 15px; 
+    z-index: 2;
+}

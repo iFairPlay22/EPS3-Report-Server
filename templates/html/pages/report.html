@@ -8,6 +8,10 @@
 
 {% block body %}
 
+    <button id="thermal-fixed-btn" type="button" class="btn btn-outline-primary btn-rounded waves-effect">
+        <i class="bi bi-camera-fill me-2"></i>Swich camera
+    </button>
+
     {# Report title + Time select #}
     <div class="my-5 pt-5 d-flex flex-column flex-justify-center align-items-center">
         <h1>REPORT</h1>
@@ -17,7 +21,14 @@
             </label>
             <select id="report-date-select" class="form-select d-inline mx-2">
                 {% for date in analysis_dates %}
-                    <option value="{{date.program}}">{{date.human}}</option>
+                    <option 
+                        {% if date.program == analysis_date %}
+                            selected
+                        {% endif %}
+                        value="{{url_for("report", building_name=building_name, day_string=date.program)}}"
+                    >
+                        {{date.human}}
+                    </option>
                 {% endfor %}
             </select>
         </div>

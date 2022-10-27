@@ -343,7 +343,7 @@ def report(building_name : str, day_string : str = "_"):
 	return render_template(
 		"pages/report.html",
   		building_name=building_name,
-		analysis_date=getReadableDate(day_string),
+		analysis_date=day_string,
 		analysis_dates=analysis_dates,
 		analysis=analysis
 	)
