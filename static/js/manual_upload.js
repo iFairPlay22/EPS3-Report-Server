@@ -14,7 +14,7 @@ $(document).ready(() => {
             redirect: 'follow'
         };
 
-        fetch("http://127.0.0.1:5000/api/manual-prediction", requestOptions)
+        fetch("/api/manual-prediction", requestOptions)
             .then(response => response.blob())
             .then(imageBlob => {
                 

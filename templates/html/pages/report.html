@@ -16,8 +16,8 @@
                 <h3>Building "{{building_name}}", at</h3>    
             </label>
             <select id="report-date-select" class="form-select d-inline mx-2">
-                {% for date, data in time_analysis.items() %}
-                    <option value="{{date}}">{{data.readable_date}}</option>
+                {% for date in analysis_dates %}
+                    <option value="{{date.program}}">{{date.human}}</option>
                 {% endfor %}
             </select>
         </div>
@@ -47,7 +47,7 @@
                     <div class="tab-pane fade show active" id="big-original-image-data" role="tabpanel" aria-labelledby="big-original-image-tab">
                         <table>
                             <tbody>
-                                {% for original_image_row in time_analysis[time_chosen].big_original_image_matrix %}
+                                {% for original_image_row in analysis.big_original_image_matrix %}
                                     <tr>
                                         {% for original_image_column in original_image_row %}
                                             <td>
@@ -63,7 +63,7 @@
                     <div class="tab-pane fade" id="big-annotated-image-data" role="tabpanel" aria-labelledby="big-annotated-image-tab">
                         <table>
                             <tbody>
-                                {% for result_image_row in time_analysis[time_chosen].big_result_image_matrix %}
+                                {% for result_image_row in analysis.big_result_image_matrix %}
                                     <tr>
                                         {% for result_image_column in result_image_row %}
                                             <td>
@@ -88,7 +88,7 @@
                 </div>
                 <div>
                     <div id="report-issues-frequency-chart" style="width:auto;height:60vh;"></div>
-                    <meta id="report-issues-frequency-data" content='{{ time_analysis[time_chosen].class_name_frequency|tojson }}'>
+                    <meta id="report-issues-frequency-data" content='{{ analysis.class_name_frequency|tojson }}'>
                 </div>
             </div>
 
@@ -111,9 +111,9 @@
                 <option value="all">All</option>
                 <option value="nothing">Safe</option>
                 <option value="issue">Issue</option>
-                <option value="crack">Cracks</option>
-                <option value="thermal-leak">Thermal leaks</option>
-                <option value="mold">Molds</option>
+                <option value="crack">Crack</option>
+                <option value="thermal-leak">Thermal leak</option>
+                <option value="mold">Moisture</option>
             </select>
             <btn id="analysis-table-download-btn" class="btn btn-primary">Download</btn>
           </div>
@@ -129,8 +129,8 @@
                         </tr>
                     </thead>
                     <tbody id="analysis-table-tbody">
-                        {% for analysis_data in time_analysis[time_chosen].analysis_results %}
-                            <tr>
+                        {% for analysis_data in analysis.analysis_results %}
+                            <tr building_name="{{ building_name }}" building_row="{{ analysis_data.metadata.row }}" building_column="{{ analysis_data.metadata.column }}">
                                 <td scope="row">
                                     <img src="/{{ analysis_data.original_image }}" alt="Original image" width="200" height="200">
                                 </td>
@@ -151,6 +151,25 @@
             </div>
         </div>
     </div>
+  
+  <!-- Modal -->
+  <div class="modal fade" id="historic-analysis-comparison-modal" tabindex="-1" aria-labelledby="historic-analysis-comparison-modal-label" aria-hidden="false">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title" id="historic-analysis-comparison-modal-label">Historic report</h2>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" id="historic-analysis-comparison-modal-body">
+          
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
 {% endblock %}
 
 {% block js %}

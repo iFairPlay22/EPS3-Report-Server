@@ -1,0 +1,36 @@
+<div>
+    <h2>HISTORIC ANALYSIS GRAPH</h2>
+    <hr class="line" />
+    <div id="historic-analysis-graph" style='height:350px; width: auto;'></div>
+    <meta id="historic-analysis-graph-data" content='{{ day_predictions_count|tojson }}'>
+</div>
+
+<div>
+    <h2>HISTORIC ANALYSIS LIST</h2>
+    <hr class="line" />
+</div>
+
+<table class="table my-4">
+    <thead>
+        <tr>
+            <th col-index="1" scope="col">Date</th>
+            <th col-index="2" scope="col">Original image</th>
+            <th col-index="3" scope="col">Result image</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for day, analysis in day_analysis.items() %}
+            <tr>
+                <td scope="row">
+                    {{ day }}
+                </td>
+                <td scope="row">
+                    <img src="/{{ analysis.original_image }}" alt="" width="200" height="200">
+                </td>
+                <td scope="row">
+                    <img src="/{{ analysis.result_image }}" alt="" width="200" height="200">
+                </td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>

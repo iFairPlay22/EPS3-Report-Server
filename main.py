@@ -99,6 +99,19 @@ def getAnalysis(building_name : str, day_string : str):
 
 	return analysis_results, class_name_frequency, big_original_image_matrix, big_result_image_matrix
 
+def getReadableDate(storageDate : str):
+    return datetime.strptime(storageDate, '%Y%m%d').date().strftime('%d/%m/%Y')
+
+def getAnalysisDatesOfBuilding(building_name : str):
+    return [ 
+		{
+			"human"    : getReadableDate(date_file_path),
+			"program" : date_file_path
+		}
+		for (date_file_path, date_file_full_path) 
+		in u.subFolders(os.path.join(STORAGE_FOLDER, u.sanitizeFileName(building_name)))
+	]
+
 ################################################################################################
 #####> DELETE REQUESTS
 ################################################################################################
@@ -285,40 +298,54 @@ def manualPrediction():
 #####> GET REQUESTS
 ################################################################################################
 
-def getReadableDate(storageDate):
-    return datetime.strptime(storageDate, '%Y%m%d').date().strftime('%d/%m/%Y')
-
 # Manual prediction view
 @app.route('/manual-upload', methods=['GET'])
 def manualUpload():
 	return render_template("pages/manual_upload.html")
 
-
 # See the results of a previous analysis
-@app.route('/report/<building_name>', methods=['GET'])
-def report(building_name : str):
+@app.route('/historic-report/<building_name>/<row>/<column>', methods=['GET'])
+def historic_report(building_name : str, row : int, column : int):
     	
-	time_analysis = {}
+	day_analysis = {}
+	day_predictions_count = []
 
 	building_folder_full_path = os.path.join(STORAGE_FOLDER, u.sanitizeFileName(building_name))
 	for (date_file_path, date_file_full_path) in u.subFolders(building_folder_full_path):		
 		day_string = date_file_path
-		analysis_results, class_name_frequency, big_original_image_matrix, big_result_image_matrix = getAnalysis(building_name, day_string)
-		time_analysis[day_string] = {
-			"readable_date"				: getReadableDate(day_string),
-			"analysis_results"          : analysis_results,
-			"class_name_frequency"      : class_name_frequency,
-			"big_original_image_matrix" : big_original_image_matrix,
-			"big_result_image_matrix"   : big_result_image_matrix,
-		}
-		
-	selected_time = list(time_analysis.keys())[-1]
+		analysis = getAnalysisForPart(building_name, day_string, row, column);
+		day_analysis[getReadableDate(day_string)] = analysis
 
+		predictions_count = dict(Counter([ prediction["class"]["name"] for prediction in analysis["predictions"] ]))
+		predictions_count["date"] = getReadableDate(day_string)
+		day_predictions_count.append(predictions_count)
+	
+	return render_template("part/historic_report.html", day_analysis=day_analysis, day_predictions_count=day_predictions_count)
+
+# See the results of a previous analysis
+@app.route('/report/<building_name>/<day_string>', methods=['GET'])
+def report(building_name : str, day_string : str = "_"):
+    	
+	analysis_dates = getAnalysisDatesOfBuilding(building_name)
+
+	if day_string == "_":
+		# Last report date by default
+		day_string = analysis_dates[-1]["program"]
+
+	analysis_results, class_name_frequency, big_original_image_matrix, big_result_image_matrix = getAnalysis(building_name, day_string)
+	analysis = {
+		"analysis_results"          : analysis_results,
+		"class_name_frequency"      : class_name_frequency,
+		"big_original_image_matrix" : big_original_image_matrix,
+		"big_result_image_matrix"   : big_result_image_matrix,
+	}
+		
 	return render_template(
 		"pages/report.html",
-		time_analysis=time_analysis,
-		time_chosen=selected_time,
-  		building_name=building_name
+  		building_name=building_name,
+		analysis_date=getReadableDate(day_string),
+		analysis_dates=analysis_dates,
+		analysis=analysis
 	)
 
 @app.route('/', methods=['GET'])
@@ -335,7 +362,7 @@ def home():
 		# Add an entry
 		reports.append({
 			"building_name" : building_name,
-			"link"          : url_for("report", building_name=building_name)
+			"link"          : url_for("report", building_name=building_name, day_string="_")
 		})
 
 	return render_template(

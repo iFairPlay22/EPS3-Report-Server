@@ -69,6 +69,9 @@ th, td{
     vertical-align: middle;
 	border: solid 1px #7b8090;
 }
+tr{
+	cursor: pointer;
+}
 tr:hover{
     background-color: #f6f6f8;
     transition: 0.5s;
