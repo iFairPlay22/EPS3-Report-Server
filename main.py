@@ -165,11 +165,10 @@ def getCompleteAnalysis(building_name : str, day_string : str):
 			analysis_results.append(getPartialAnalysis(building_name, day_string, row_folder_name, col_folder_name))
 	result["analysis_results"] = analysis_results
 
-	# Building issues frequency
+	# Building issues counter
 	class_name_predictions = [ prediction_data["class"]["name"] for analysis_data in analysis_results for prediction_data in analysis_data["predictions"] ]
 	class_name_counter     = Counter(class_name_predictions)
-	class_name_frequency   = { class_name : float(iterations / len(class_name_predictions)) for class_name, iterations in class_name_counter.items() }
-	result["class_name_frequency"] = class_name_frequency
+	result["class_name_count"] = class_name_counter
 	
 	# Building big image
 	max_column      = max([ int(analysis_data["metadata"]["column"]) for analysis_data in analysis_results  ])
@@ -334,6 +333,7 @@ def manualPrediction():
 #####> GET REQUESTS
 ################################################################################################
 
+# TODO
 # Manual prediction view
 @app.route('/manual-upload', methods=['GET'])
 def manualUpload():

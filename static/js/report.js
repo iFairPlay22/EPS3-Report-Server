@@ -51,16 +51,16 @@ function doesRowConcernClassName(jqueryRow, class_name) {
     return concerns;
 }
 
-// Frequency issues graph
+// Issues count graph
 function generateIssueCountGraphData(metaId) {
     jsonString = $(`#${metaId}`).attr("content")
     jsonData   = JSON.parse(jsonString);
 
     chartData = []
-    for (const [class_name, frequency] of Object.entries(jsonData)) {
+    for (const [class_name, count] of Object.entries(jsonData)) {
         chartData.push({
             "class_name": class_name,
-            "frequency": frequency
+            "count": count
         });
     }
 
@@ -76,7 +76,7 @@ function generateIssueCountGraph(chartId, chartData) {
         chart.logo.disabled = true
     
     var pieSeries = chart.series.push(new am4charts.PieSeries());
-    pieSeries.dataFields.value = "frequency";
+    pieSeries.dataFields.value = "count";
     pieSeries.dataFields.category = "class_name";
     chart.innerRadius = am4core.percent(40);
     chart.legend = new am4charts.Legend();
@@ -96,7 +96,7 @@ function generateHistoricIssueEvolutionData(metaId) {
     let jsonData   = JSON.parse(jsonString);
     console.log(jsonData)
     let chartData  = []   
-    let labels     = [ "crack", "mold", "thermal-leak" ];
+    let labels     = [ "crack", "moisture", "thermal-leak" ];
 
     for (let data of jsonData) {
 
@@ -225,7 +225,7 @@ $(document).ready(() => {
         // 
     });
 
-    // Frequency issues graph
-    const chartData = generateIssueCountGraphData("report-issues-frequency-data");
-    generateIssueCountGraph("report-issues-frequency-chart", chartData);
+    // count issues graph
+    const chartData = generateIssueCountGraphData("report-issues-count-data");
+    generateIssueCountGraph("report-issues-count-chart", chartData);
 });

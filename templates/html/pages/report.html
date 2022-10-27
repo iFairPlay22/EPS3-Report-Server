@@ -94,15 +94,15 @@
             </div>
           </div>
 
-        {# Issue frequency graph #}
+        {# Issue count graph #}
             <div class="col-12 col-md-6 pt-5">
                 <div>
-                    <h2>ISSUES FREQUENCY</h2>
+                    <h2>ISSUES TYPES</h2>
                     <hr class="line" />
                 </div>
                 <div>
-                    <div id="report-issues-frequency-chart" style="width:auto;height:60vh;"></div>
-                    <meta id="report-issues-frequency-data" content='{{ analysis.class_name_frequency|tojson }}'>
+                    <div id="report-issues-count-chart" style="width:auto;height:60vh;"></div>
+                    <meta id="report-issues-count-data" content='{{ analysis.class_name_count|tojson }}'>
                 </div>
             </div>
 
@@ -127,7 +127,7 @@
                 <option value="issue">Issue</option>
                 <option value="crack">Crack</option>
                 <option value="thermal-leak">Thermal leak</option>
-                <option value="mold">Moisture</option>
+                <option value="moisture">Moisture</option>
             </select>
             <btn id="analysis-table-download-btn" class="btn btn-primary">Download</btn>
           </div>
