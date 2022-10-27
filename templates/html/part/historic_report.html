@@ -25,10 +25,12 @@
                     {{ day }}
                 </td>
                 <td scope="row">
-                    <img src="/{{ analysis.original_image }}" alt="" width="200" height="200">
+                    <img class="normal-image" src="/{{ analysis.images.normal.initial }}" alt="" width="200" height="200">
+                    <img class="thermal-image d-none" src="/{{ analysis.images.thermal.initial }}" alt="" width="200" height="200">
                 </td>
                 <td scope="row">
-                    <img src="/{{ analysis.result_image }}" alt="" width="200" height="200">
+                    <img class="normal-image" src="/{{ analysis.images.normal.result }}" alt="" width="200" height="200">
+                    <img class="thermal-image d-none" src="/{{ analysis.images.thermal.result }}" alt="" width="200" height="200">
                 </td>
             </tr>
         {% endfor %}
