@@ -61,17 +61,14 @@
                 <thead>
                     <tr>
                         <th col-index="1" scope="col" class="col2">Building</th>
-                        <th col-index="2" scope="col" class="col3">Report</th>
                     </tr>
                 </thead>
 
-                <tbody>
+                <tbody id="buildings-report-tbody">
                     {% for report in reports %}
-                        <tr id="tr1">
+                        <tr href="{{ report.link }}">
                             <td scope="row">
-                                {{ report.building_name }}</td>
-                            <td scope="row">
-                                <a href="{{ report.link }}">Report</a>
+                                {{ report.building_name }}
                             </td>
                         </tr>
                     {% endfor %}
