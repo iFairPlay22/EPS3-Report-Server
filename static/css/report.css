@@ -24,3 +24,25 @@
     background-color: #0d6efd;
     transition: background-color 0.2s ease-in-out;
 }
+/* TABLES */
+table{
+	border : 1.5px solid #7b8090;
+}
+thead{
+	background-color: #e0e0e3;
+	color: #505a72;
+	text-align: center;
+
+}
+th, td{
+	text-align: center;
+    vertical-align: middle;
+	border: solid 1px #7b8090;
+}
+tr{
+	cursor: pointer;
+}
+tr:hover{
+    background-color: #e0e0e3;
+    transition: 0.5s;
+}
