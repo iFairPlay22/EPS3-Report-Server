@@ -66,9 +66,12 @@
 
                 <tbody id="buildings-report-tbody">
                     {% for report in reports %}
-                        <tr href="{{ report.link }}">
+                        <tr>
                             <td scope="row">
                                 {{ report.building_name }}
+                            </td>
+                            <td scope="row">
+                                <a href="{{ report.link }}"><img src={{ url_for('static', filename='pictures/report.png')}} alt="" width="45" height="45" title="report"></a>
                             </td>
                         </tr>
                     {% endfor %}
