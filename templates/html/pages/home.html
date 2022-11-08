@@ -67,7 +67,7 @@
 
                 <tbody id="buildings-report-tbody">
                     {% for report in reports %}
-                        <tr>
+                        <tr href="{{ report.link }}">
                             <td scope="row">
                                 {{ report.building_name }}
                             </td>
