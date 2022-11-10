@@ -1,0 +1,166 @@
+{
+    "metadata": {
+        "building_name": "cracks1",
+        "day": "20221110",
+        "time": "203437",
+        "column": "0",
+        "row": "1"
+    },
+    "images": {
+        "normal": {
+            "initial": "static\\storage\\cracks1\\20221110\\1\\0\\normal-initial-image.PNG",
+            "result": "static\\storage\\cracks1\\20221110\\1\\0\\normal-result-image.PNG"
+        },
+        "thermal": {
+            "initial": "static\\storage\\cracks1\\20221110\\1\\0\\thermal-initial-image.PNG",
+            "result": "static\\storage\\cracks1\\20221110\\1\\0\\thermal-result-image.PNG"
+        }
+    },
+    "predictions": [
+        {
+            "confidence": 51,
+            "class": "crack",
+            "box": {
+                "xmin": 2.921178102493286,
+                "ymin": 203.2385711669922,
+                "xmax": 259.5570373535156,
+                "ymax": 270.8211364746094
+            }
+        },
+        {
+            "confidence": 100,
+            "class": "hot leak",
+            "box": {
+                "xmin": 0.0,
+                "ymin": 152.0,
+                "xmax": 13.0,
+                "ymax": 154.0
+            }
+        },
+        {
+            "confidence": 100,
+            "class": "hot leak",
+            "box": {
+                "xmin": 0.0,
+                "ymin": 186.0,
+                "xmax": 6.0,
+                "ymax": 195.0
+            }
+        },
+        {
+            "confidence": 100,
+            "class": "hot leak",
+            "box": {
+                "xmin": 16.0,
+                "ymin": 190.0,
+                "xmax": 25.0,
+                "ymax": 191.0
+            }
+        },
+        {
+            "confidence": 100,
+            "class": "hot leak",
+            "box": {
+                "xmin": 18.0,
+                "ymin": 164.0,
+                "xmax": 20.0,
+                "ymax": 166.0
+            }
+        },
+        {
+            "confidence": 100,
+            "class": "hot leak",
+            "box": {
+                "xmin": 32.0,
+                "ymin": 182.0,
+                "xmax": 78.0,
+                "ymax": 189.0
+            }
+        },
+        {
+            "confidence": 100,
+            "class": "hot leak",
+            "box": {
+                "xmin": 53.0,
+                "ymin": 0.0,
+                "xmax": 199.0,
+                "ymax": 199.0
+            }
+        },
+        {
+            "confidence": 100,
+            "class": "hot leak",
+            "box": {
+                "xmin": 59.0,
+                "ymin": 36.0,
+                "xmax": 100.0,
+                "ymax": 61.0
+            }
+        },
+        {
+            "confidence": 100,
+            "class": "cold leak",
+            "box": {
+                "xmin": 58.0,
+                "ymin": 5.0,
+                "xmax": 158.0,
+                "ymax": 61.0
+            }
+        },
+        {
+            "confidence": 100,
+            "class": "cold leak",
+            "box": {
+                "xmin": 158.0,
+                "ymin": 41.0,
+                "xmax": 159.0,
+                "ymax": 41.0
+            }
+        },
+        {
+            "confidence": 100,
+            "class": "cold leak",
+            "box": {
+                "xmin": 169.0,
+                "ymin": 37.0,
+                "xmax": 190.0,
+                "ymax": 56.0
+            }
+        },
+        {
+            "confidence": 100,
+            "class": "cold leak",
+            "box": {
+                "xmin": 170.0,
+                "ymin": 12.0,
+                "xmax": 171.0,
+                "ymax": 12.0
+            }
+        },
+        {
+            "confidence": 100,
+            "class": "cold leak",
+            "box": {
+                "xmin": 171.0,
+                "ymin": 6.0,
+                "xmax": 199.0,
+                "ymax": 25.0
+            }
+        },
+        {
+            "confidence": 100,
+            "class": "cold leak",
+            "box": {
+                "xmin": 183.0,
+                "ymin": 58.0,
+                "xmax": 184.0,
+                "ymax": 61.0
+            }
+        }
+    ],
+    "issues_nb": {
+        "crack": 1,
+        "hot leak": 7,
+        "cold leak": 6
+    }
+}

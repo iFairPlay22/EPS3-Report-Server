@@ -1,4 +1,6 @@
 from flask import Flask, redirect, url_for, request, render_template, send_file
+from python.structural_issues import StructuralIssuesDetector
+from python.thermal_issues import ThermalIssuesDetector
 from datetime import datetime
 import io
 import os
@@ -11,72 +13,41 @@ import ssl
 ssl._create_default_https_context = ssl._create_unverified_context
 
 ################################################################################################
-#####> FOLDER MANAGEMENT
+#####> GLOBAL VARIABLES
 ################################################################################################
 
-TEMPLATES_FOLDER                = os.path.join("templates", "html")
-ASSETS_FOLDER                   = "assets"
-STATIC_FOLDER                   = "static"
-STORAGE_FOLDER					= os.path.join(STATIC_FOLDER, "storage")
+# Folders
+TEMPLATES_FOLDER                		= os.path.join("templates", "html")
+STATIC_FOLDER                   		= "static"
+ASSETS_FOLDER                   		= "assets"
+STORAGE_FOLDER							= os.path.join(STATIC_FOLDER, "storage")
 
-STORAGE_NORMAL_INITIAL_IMAGE_FILE_NAME = "normal-initial-image"
-STORAGE_NORMAL_RESULT_IMAGE_FILE_NAME  = "normal-result-image"
+# Files
+STORAGE_NORMAL_INITIAL_IMAGE_FILE_NAME 	= "normal-initial-image"
+STORAGE_NORMAL_RESULT_IMAGE_FILE_NAME  	= "normal-result-image"
 STORAGE_THERMAL_INITIAL_IMAGE_FILE_NAME = "thermal-initial-image"
 STORAGE_THERMAL_RESULT_IMAGE_FILE_NAME  = "thermal-result-image"
-STORAGE_RESULT_DATA_FILE_NAME   = "result-data"
+STORAGE_RESULT_DATA_FILE_NAME   		= "result-data"
 
-u.createFoldersIfNotExists([
-	TEMPLATES_FOLDER, 
-	ASSETS_FOLDER,
-	STATIC_FOLDER,
-	STORAGE_FOLDER
-])
+# Structural issues detector
+STRUCTURAL_ISSUES_MODEL_WEIGHTS_PATH 	= os.path.join(ASSETS_FOLDER, "weights/best_weights.pt")
+STRUCTURAL_ISSUES_DETECTOR  			= StructuralIssuesDetector(STRUCTURAL_ISSUES_MODEL_WEIGHTS_PATH)
 
-################################################################################################
-#####> LAUNCH APP
-################################################################################################
+# Thermal issues detector
+THERMAL_ISSUES_DETECTOR					= ThermalIssuesDetector()
 
+# Launch app
+u.createFoldersIfNotExists([ TEMPLATES_FOLDER, STATIC_FOLDER, ASSETS_FOLDER, STORAGE_FOLDER ])
 app = Flask(__name__, template_folder=TEMPLATES_FOLDER, static_folder=STATIC_FOLDER)
-normal_model  = torch.hub.load('ultralytics/yolov5', 'custom', path=os.path.join(ASSETS_FOLDER, "weights/best_normal.pt" )) # , force_reload=True
-thermal_model = torch.hub.load('ultralytics/yolov5', 'custom', path=os.path.join(ASSETS_FOLDER, "weights/best_thermal.pt")) # , force_reload=True
-	
 
 ################################################################################################
 #####> UTIL METHODS
 ################################################################################################
 
-# Make a prediction of an image thanks to a model
-def makePrediction(model, img : Image):
-    	
-    # Make prediction
-	results         = model([img])
-	results_data    = results.pandas().xyxy[0]
-	result_img_arr  = results.render()[0]
-	result_image    = Image.fromarray(result_img_arr)
-
-	# Json
-	result_predictions = [
-		{
-			"confidence": round(float(results_data.confidence[i]) * 100),
-			"class": {
-				"id"  : int(results_data["class"][i]),
-				"name": str(results_data.name[i]),
-			},
-			"box": {
-				"xmin": float(results_data.xmin[i]),
-				"ymin": float(results_data.ymin[i]),
-				"xmax": float(results_data.xmax[i]),
-				"ymax": float(results_data.ymax[i]),
-			}
-		}
-		for i in range(results_data.shape[0])
-	]
-
-	return result_image, result_predictions
-
 # Upload the report files in the STORAGE_FOLDER
-def uploadReportFiles(data : dict, initial_normal_file : Image, initial_thermal_file : Image):
+def uploadReportFiles(data : dict, normal_initial_file : Image, thermal_initial_file : Image):
 
+	# Sanitize data
 	date_time             = datetime.now()
 	data["date"]          = u.sanitizeFileName(date_time.strftime('%Y-%m-%d'))
 	data["time"]          = u.sanitizeFileName(date_time.strftime('%H-%M-%S'))
@@ -84,30 +55,32 @@ def uploadReportFiles(data : dict, initial_normal_file : Image, initial_thermal_
 	data["row"] 		  = u.sanitizeFileName(int(data["row"]))
 	data["column"] 		  = u.sanitizeFileName(int(data["column"]))
 
-	# Base folder
+	# Create base folder
 	base_folder_path = os.path.join(STORAGE_FOLDER, data["building_name"], data["date"], data["row"], data["column"]) 
 	if u.folderExists(base_folder_path):
 		raise Exception("Data already exists for the id (building_name, time, row, column)")
 	u.createFolderIfNotExists(base_folder_path)
 
-	# File names
-	normal_initial_image_full_path  = os.path.join(base_folder_path, STORAGE_NORMAL_INITIAL_IMAGE_FILE_NAME + "." + initial_normal_file.format) 
-	normal_result_image_full_path   = os.path.join(base_folder_path, STORAGE_NORMAL_RESULT_IMAGE_FILE_NAME  + "." + initial_normal_file.format)
-	thermal_initial_image_full_path = os.path.join(base_folder_path, STORAGE_THERMAL_INITIAL_IMAGE_FILE_NAME + "." + initial_thermal_file.format)
-	thermal_result_image_full_path  = os.path.join(base_folder_path, STORAGE_THERMAL_RESULT_IMAGE_FILE_NAME  + "." + initial_thermal_file.format)
-	result_data_full_path                  = os.path.join(base_folder_path, STORAGE_RESULT_DATA_FILE_NAME   + "." + "json")
+	# Create paths
+	normal_initial_image_full_path  = os.path.join(base_folder_path, STORAGE_NORMAL_INITIAL_IMAGE_FILE_NAME + "." + normal_initial_file.format) 
+	normal_result_image_full_path   = os.path.join(base_folder_path, STORAGE_NORMAL_RESULT_IMAGE_FILE_NAME  + "." + normal_initial_file.format)
+	thermal_initial_image_full_path = os.path.join(base_folder_path, STORAGE_THERMAL_INITIAL_IMAGE_FILE_NAME + "." + thermal_initial_file.format)
+	thermal_result_image_full_path  = os.path.join(base_folder_path, STORAGE_THERMAL_RESULT_IMAGE_FILE_NAME  + "." + thermal_initial_file.format)
+	result_data_full_path           = os.path.join(base_folder_path, STORAGE_RESULT_DATA_FILE_NAME   + "." + "json")
 	
-	# Save original images
-	initial_normal_file.save(normal_initial_image_full_path)
-	initial_thermal_file.save(thermal_initial_image_full_path)
+	# Make detections
+	normal_result_image,  normal_predictions  = STRUCTURAL_ISSUES_DETECTOR.detect(normal_initial_file)
+	thermal_result_image, thermal_predictions = THERMAL_ISSUES_DETECTOR.detect(thermal_initial_file)
 
-	# Make prediction
-	normal_result_image,  normal_predictions  = makePrediction(normal_model,  initial_normal_file)
-	thermal_result_image, thermal_predictions = makePrediction(thermal_model, initial_thermal_file)
-	
+	# Save result images
+	normal_initial_file.save(normal_initial_image_full_path)
+	thermal_initial_file.save(thermal_initial_image_full_path)
+	normal_result_image.save(normal_result_image_full_path)
+	thermal_result_image.save(thermal_result_image_full_path)
+
 	# Merge predictions for json
 	all_predictions = normal_predictions + thermal_predictions
-	all_predictions_class_name = map(lambda pred: pred["class"]["name"], all_predictions)
+	all_predictions_class_name = map(lambda pred: pred["class"], all_predictions)
 	result_json = {
 		"metadata": {
 			"building_name": str(data["building_name"]),
@@ -129,10 +102,6 @@ def uploadReportFiles(data : dict, initial_normal_file : Image, initial_thermal_
 		"predictions": all_predictions,
 		"issues_nb": dict(Counter(all_predictions_class_name))
 	}
-
-	# Save result images
-	normal_result_image.save(normal_result_image_full_path)
-	thermal_result_image.save(thermal_result_image_full_path)
 
 	# Save result data
 	with open(result_data_full_path, 'w') as f:
@@ -166,7 +135,7 @@ def getCompleteAnalysis(building_name : str, day_string : str):
 	result["analysis_results"] = analysis_results
 
 	# Building issues counter
-	class_name_predictions = [ prediction_data["class"]["name"] for analysis_data in analysis_results for prediction_data in analysis_data["predictions"] ]
+	class_name_predictions = [ prediction_data["class"] for analysis_data in analysis_results for prediction_data in analysis_data["predictions"] ]
 	class_name_counter     = Counter(class_name_predictions)
 	result["class_name_count"] = class_name_counter
 	
@@ -298,6 +267,7 @@ def apiUploadFromStorage(building_name : str):
 			if thermalImage is None:
 				raise Exception('Missing thermal image named "thermal.*" in folder ' + col_folder_full_path);
 
+			print("Uploading {}, row {}, column {}".format(building_name, row, column))
 			result[col_image_full_path] = uploadReportFiles(
 				{
 					"building_name": str(building_name),
@@ -322,7 +292,7 @@ def manualPrediction():
 	if not("file" in request.files):
 		return 'No file "file" found...'
     
-	results_data, result_image = makePrediction(Image.open(request.files["file"].stream))
+	results_data, result_image = detectIssues(Image.open(request.files["file"].stream))
 
 	img_io = io.BytesIO()
 	result_image.save(img_io, 'JPEG', quality=70)
@@ -352,7 +322,7 @@ def historic_report(building_name : str, row : int, column : int):
 		analysis = getPartialAnalysis(building_name, day_string, row, column);
 		day_analysis[getReadableDate(day_string)] = analysis
 
-		predictions_count = dict(Counter([ prediction["class"]["name"] for prediction in analysis["predictions"] ]))
+		predictions_count = dict(Counter([ prediction["class"] for prediction in analysis["predictions"] ]))
 		predictions_count["date"] = getReadableDate(day_string)
 		day_predictions_count.append(predictions_count)
 	

@@ -96,7 +96,7 @@ function generateHistoricIssueEvolutionData(metaId) {
     let jsonData   = JSON.parse(jsonString);
     console.log(jsonData)
     let chartData  = []   
-    let labels     = [ "crack", "moisture", "thermal-leak" ];
+    let labels     = [ "crack", "moisture", "hot leak", "cold leak" ];
 
     for (let data of jsonData) {
 

@@ -1,0 +1,116 @@
+{
+    "metadata": {
+        "building_name": "cracks1",
+        "day": "20221110",
+        "time": "203455",
+        "column": "1",
+        "row": "1"
+    },
+    "images": {
+        "normal": {
+            "initial": "static\\storage\\cracks1\\20221110\\1\\1\\normal-initial-image.PNG",
+            "result": "static\\storage\\cracks1\\20221110\\1\\1\\normal-result-image.PNG"
+        },
+        "thermal": {
+            "initial": "static\\storage\\cracks1\\20221110\\1\\1\\thermal-initial-image.PNG",
+            "result": "static\\storage\\cracks1\\20221110\\1\\1\\thermal-result-image.PNG"
+        }
+    },
+    "predictions": [
+        {
+            "confidence": 58,
+            "class": "crack",
+            "box": {
+                "xmin": 1.3391075134277344,
+                "ymin": 187.15122985839844,
+                "xmax": 243.3223114013672,
+                "ymax": 299.3108215332031
+            }
+        },
+        {
+            "confidence": 36,
+            "class": "crack",
+            "box": {
+                "xmin": 138.306884765625,
+                "ymin": 176.96998596191406,
+                "xmax": 389.72760009765625,
+                "ymax": 290.3517150878906
+            }
+        },
+        {
+            "confidence": 100,
+            "class": "hot leak",
+            "box": {
+                "xmin": 0.0,
+                "ymin": 0.0,
+                "xmax": 90.0,
+                "ymax": 199.0
+            }
+        },
+        {
+            "confidence": 100,
+            "class": "hot leak",
+            "box": {
+                "xmin": 96.0,
+                "ymin": 33.0,
+                "xmax": 140.0,
+                "ymax": 55.0
+            }
+        },
+        {
+            "confidence": 100,
+            "class": "hot leak",
+            "box": {
+                "xmin": 160.0,
+                "ymin": 4.0,
+                "xmax": 199.0,
+                "ymax": 29.0
+            }
+        },
+        {
+            "confidence": 100,
+            "class": "cold leak",
+            "box": {
+                "xmin": 0.0,
+                "ymin": 5.0,
+                "xmax": 67.0,
+                "ymax": 56.0
+            }
+        },
+        {
+            "confidence": 100,
+            "class": "cold leak",
+            "box": {
+                "xmin": 1.0,
+                "ymin": 146.0,
+                "xmax": 13.0,
+                "ymax": 166.0
+            }
+        },
+        {
+            "confidence": 100,
+            "class": "cold leak",
+            "box": {
+                "xmin": 95.0,
+                "ymin": 0.0,
+                "xmax": 199.0,
+                "ymax": 126.0
+            }
+        },
+        {
+            "confidence": 100,
+            "class": "cold leak",
+            "box": {
+                "xmin": 189.0,
+                "ymin": 118.0,
+                "xmax": 190.0,
+                "ymax": 119.0
+            }
+        }
+    ],
+    "issues_nb": {
+        "crack": 2,
+        "hot leak": 3,
+        "cold leak": 4
+    }
+}
