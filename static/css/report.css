@@ -8,19 +8,53 @@
 
 #switch-camera-fixed-btn {
     position: fixed;
-    top: 15px;
+    top: 25px;
     right: 15px;
     z-index: 999999 !important;
     background-color: #f6f6f8;
+    border: solid 1px black;
+    color:black;
     transition: background-color 0.2s ease-in-out;
 }
 
 #switch-camera-fixed-btn:hover {
     position: fixed;
-    top: 0px;
+    top: 10px;
     right: 0px;
     margin: 15px; 
     z-index: 2;
-    background-color: #0d6efd;
+    background-color: white;
+    color:black;
+    font-weight: bold;
     transition: background-color 0.2s ease-in-out;
+}
+
+#analysis-table-download-btn{
+    background-color: black;
+    border:none;
+}
+#analysis-table-download-btn:hover{
+    font-weight: bold;
+}
+/* TABLES */
+table{
+	border : 1.5px solid #7b8090;
+}
+thead{
+	background-color: #e0e0e3;
+	color: #505a72;
+	text-align: center;
+
+}
+th, td{
+	text-align: center;
+    vertical-align: middle;
+	border: solid 1px #7b8090;
+}
+tr{
+	cursor: pointer;
+}
+tr:hover{
+    background-color: #e0e0e3;
+    transition: 0.5s;
 }

@@ -59,7 +59,7 @@ table{
 	border : 1.5px solid #7b8090;
 }
 thead{
-	background-color: #f6f6f8;
+	background-color: #e0e0e3;
 	color: #505a72;
 	text-align: center;
 
@@ -73,7 +73,7 @@ tr{
 	cursor: pointer;
 }
 tr:hover{
-    background-color: #f6f6f8;
+    background-color: #e0e0e3;
     transition: 0.5s;
 }
 /* HEADER */
