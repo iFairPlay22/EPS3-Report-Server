@@ -6,6 +6,7 @@ class StructuralIssuesDetector:
 
     def __init__(self, model_path: str):
         self.__model  = torch.hub.load('ultralytics/yolov5', 'custom', path=model_path)
+        self.__model.conf = 0.3
 
     def detect(self, img : Image):
     	

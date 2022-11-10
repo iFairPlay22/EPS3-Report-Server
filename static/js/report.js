@@ -128,6 +128,9 @@ function generateHistoricIssueEvolutionGraph(metaId, chartData, labels) {
     chart.paddingLeft = 35;
     chart.data = chartData;
 
+    if (chart.logo)
+        chart.logo.disabled = true
+
     // Create axes
     var dateAxis = chart.xAxes.push(new am4charts.DateAxis());
     dateAxis.renderer.minGridDistance = 50;

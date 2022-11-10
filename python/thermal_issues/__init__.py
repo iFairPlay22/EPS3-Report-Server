@@ -26,7 +26,7 @@ class ThermalIssuesDetector:
             { "rgb": (223, 229, 149),   "color": "Green Yellow Crayola",    "temperature": 14},
             { "rgb": (227, 230, 202),   "color": "Beige",                   "temperature": 15}
         ]
-        self.leak_offset = 3.5
+        self.leak_offset = 5
 
     def detect(self, img: Image, show=False):
         

@@ -2,7 +2,7 @@
     "metadata": {
         "building_name": "cracks1",
         "day": "20221110",
-        "time": "203434",
+        "time": "204908",
         "column": "1",
         "row": "0"
     },
@@ -31,106 +31,86 @@
             "confidence": 100,
             "class": "hot leak",
             "box": {
-                "xmin": 0.0,
+                "xmin": 70.0,
                 "ymin": 0.0,
-                "xmax": 34.0,
-                "ymax": 58.0
+                "xmax": 71.0,
+                "ymax": 14.0
             }
         },
         {
             "confidence": 100,
             "class": "hot leak",
             "box": {
-                "xmin": 0.0,
-                "ymin": 0.0,
-                "xmax": 95.0,
-                "ymax": 86.0
+                "xmin": 83.0,
+                "ymin": 179.0,
+                "xmax": 142.0,
+                "ymax": 195.0
             }
         },
         {
             "confidence": 100,
             "class": "hot leak",
             "box": {
-                "xmin": 103.0,
-                "ymin": 183.0,
+                "xmin": 153.0,
+                "ymin": 179.0,
+                "xmax": 170.0,
+                "ymax": 195.0
+            }
+        },
+        {
+            "confidence": 100,
+            "class": "hot leak",
+            "box": {
+                "xmin": 172.0,
+                "ymin": 102.0,
                 "xmax": 199.0,
-                "ymax": 192.0
+                "ymax": 124.0
             }
         },
         {
             "confidence": 100,
             "class": "hot leak",
             "box": {
-                "xmin": 164.0,
-                "ymin": 144.0,
-                "xmax": 164.0,
-                "ymax": 144.0
-            }
-        },
-        {
-            "confidence": 100,
-            "class": "hot leak",
-            "box": {
-                "xmin": 174.0,
-                "ymin": 137.0,
-                "xmax": 195.0,
-                "ymax": 150.0
-            }
-        },
-        {
-            "confidence": 100,
-            "class": "cold leak",
-            "box": {
-                "xmin": 3.0,
-                "ymin": 1.0,
-                "xmax": 23.0,
-                "ymax": 26.0
-            }
-        },
-        {
-            "confidence": 100,
-            "class": "cold leak",
-            "box": {
-                "xmin": 91.0,
-                "ymin": 1.0,
-                "xmax": 97.0,
-                "ymax": 88.0
-            }
-        },
-        {
-            "confidence": 100,
-            "class": "cold leak",
-            "box": {
-                "xmin": 101.0,
-                "ymin": 181.0,
+                "xmin": 179.0,
+                "ymin": 179.0,
                 "xmax": 199.0,
-                "ymax": 194.0
+                "ymax": 195.0
             }
         },
         {
             "confidence": 100,
             "class": "cold leak",
             "box": {
-                "xmin": 120.0,
-                "ymin": 0.0,
-                "xmax": 178.0,
-                "ymax": 5.0
+                "xmin": 83.0,
+                "ymin": 178.0,
+                "xmax": 198.0,
+                "ymax": 197.0
             }
         },
         {
             "confidence": 100,
             "class": "cold leak",
             "box": {
-                "xmin": 159.0,
-                "ymin": 136.0,
-                "xmax": 199.0,
-                "ymax": 152.0
+                "xmin": 155.0,
+                "ymin": 112.0,
+                "xmax": 156.0,
+                "ymax": 114.0
+            }
+        },
+        {
+            "confidence": 100,
+            "class": "cold leak",
+            "box": {
+                "xmin": 167.0,
+                "ymin": 100.0,
+                "xmax": 197.0,
+                "ymax": 126.0
             }
         }
     ],
     "issues_nb": {
         "crack": 1,
         "hot leak": 5,
-        "cold leak": 5
+        "cold leak": 3
     }
 }

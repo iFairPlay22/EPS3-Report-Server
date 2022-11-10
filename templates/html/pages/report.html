@@ -63,8 +63,8 @@
                                     <tr>
                                         {% for original_image_column in original_image_row %}
                                             <td>
-                                                <img class="normal-image" src="/{{ original_image_column.normal_initial_image_path }}" alt="" width="200" height="200">
-                                                <img class="thermal-image d-none" src="/{{ original_image_column.thermal_initial_image_path }}" alt="" width="200" height="200">
+                                                <img class="normal-image" src="/{{ original_image_column.normal_initial_image_path }}" alt="" width="{{400 / analysis.big_original_image_matrix|length}}" height="{{ 400 / original_image_row|length}}">
+                                                <img class="thermal-image d-none" src="/{{ original_image_column.thermal_initial_image_path }}" alt="" width="{{400 / analysis.big_original_image_matrix|length}}" height="{{ 400 / original_image_row|length}}">
                                             </td>
                                         {% endfor %}
                                     </tr>
@@ -80,8 +80,8 @@
                                     <tr>
                                         {% for original_image_column in original_image_row %}
                                             <td>
-                                                <img class="normal-image" src="/{{ original_image_column.normal_result_image_path }}" alt="" width="200" height="200">
-                                                <img class="thermal-image d-none" src="/{{ original_image_column.thermal_result_image_path }}" alt="" width="200" height="200">
+                                                <img class="normal-image" src="/{{ original_image_column.normal_result_image_path }}" alt="" width="{{400 / analysis.big_original_image_matrix|length}}" height="{{ 400 / original_image_row|length}}">
+                                                <img class="thermal-image d-none" src="/{{ original_image_column.thermal_result_image_path }}" alt="" width="{{400 / analysis.big_original_image_matrix|length}}" height="{{ 400 / original_image_row|length}}">
                                             </td>
                                         {% endfor %}
                                     </tr>
