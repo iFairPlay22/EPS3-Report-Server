@@ -1,5 +1,5 @@
 from PIL import Image
-import scipy
+import cv2
 import numpy as np
 from matplotlib import pyplot as plt
 
@@ -7,7 +7,7 @@ class ThermalIssuesDetector:
 
     def __init__(self):
         
-        self.image_size = (200, 200)
+        self.image_size = (250, 200)
         self.color_palette = [
             { "rgb": (15, 16, 19),      "color": "Rich Black FOGRA 39",     "temperature": 0},
             { "rgb": (40, 15, 87),      "color": "Russian Violet",          "temperature": 1},
@@ -28,17 +28,20 @@ class ThermalIssuesDetector:
         ]
         self.leak_offset = 5
 
-    def detect(self, img: Image, show=False):
+    def detectFromImage(self, img: Image, show=False):
         
         # Load RGB image
         rgb_img = RgbImage.fromPilImage(img, self.image_size)
         
         # Transform RGB image to thermal image
-        thermal_img_view, thermal_img_data = ThermalImage.FromData(rgb_img, self.color_palette)
-
+        thermal_img_view, thermal_img_data = ThermalImage.FromRgbImage(rgb_img, self.color_palette)
+        
+        # with open("test.txt", "w") as f:
+        #     f.write(str(thermal_img_data.matrix().toMatrix()))
+        
         # Transform thermal image to relative thermal image
         temperature_average, min_temperature, max_temperature = thermal_img_data.getTemperatureInfo()
-        relative_thermal_image_data = RelativeThermalImage.FromData(thermal_img_data, temperature_average)
+        relative_thermal_image_data = thermal_img_data.toRelativeThermalImage(temperature_average)
         
         # Reperate thermal leaks
         leaks_mask_view, leaks_mask_data, leaks_results_arr = LeakMask.FromData(rgb_img, relative_thermal_image_data, self.leak_offset)
@@ -49,7 +52,41 @@ class ThermalIssuesDetector:
             print(" > Leaks founded: {}".format(len(leaks_results_arr)))
             rgb_img.matrix().create_figure("Initial image")
             thermal_img_view.matrix().create_figure(
-                "Thermal image (grouped)", 
+                "Thermal image", 
+                lambda c:  "aT: {:.2f}°C rT: {:.2f}°C".format(
+                    thermal_img_data.matrix().get(c),
+                    relative_thermal_image_data.matrix().get(c)
+                )
+            )
+            leaks_mask_view.matrix().create_figure(
+                "Leak mask", 
+                lambda c:  "aT: {:.2f}°C rT: {:.2f}°C".format(
+                    thermal_img_data.matrix().get(c),
+                    relative_thermal_image_data.matrix().get(c)
+                )
+            )
+            Matrix.show()
+
+        return leaks_mask_view.toPilImage(), leaks_results_arr
+    
+    def detectFromArray(self, img_arr: Image, show=False):
+        
+        # Load RGB image
+        thermal_img_view, thermal_img_data = ThermalImage.FromThermalArray(img_arr)
+        
+        # Transform thermal image to relative thermal image
+        temperature_average, min_temperature, max_temperature = thermal_img_data.getTemperatureInfo()
+        relative_thermal_image_data = thermal_img_data.toRelativeThermalImage(temperature_average)
+        
+        # Reperate thermal leaks
+        leaks_mask_view, leaks_mask_data, leaks_results_arr = LeakMask.FromData(thermal_img_view, relative_thermal_image_data, self.leak_offset)
+
+        if show:
+            print(" > Image size: {}".format((thermal_img_view.matrix().rows(), thermal_img_view.matrix().cols())))
+            print(" > Average: {:.2f}°C, Min: {:.2f}°C, Max: {:.2f}°C".format(temperature_average, min_temperature, max_temperature))
+            print(" > Leaks founded: {}".format(len(leaks_results_arr)))
+            thermal_img_view.matrix().create_figure(
+                "Thermal image", 
                 lambda c:  "aT: {:.2f}°C rT: {:.2f}°C".format(
                     thermal_img_data.matrix().get(c),
                     relative_thermal_image_data.matrix().get(c)
@@ -159,6 +196,9 @@ class Matrix:
     def toValuesList(self, predicate: callable = lambda c: True):
         return [ self.__data[r][c] for r in range(self.__rows) for c in range(self.__cols) if predicate((r, c))]
 
+    def toMatrix(self):
+        return [ [ self.__data[r][c] for r in range(self.__rows) ] for c in range(self.__cols) ]
+
     def print(self):
         print("[")
 
@@ -178,14 +218,8 @@ class Matrix:
             conn = plt.connect('motion_notify_event', cursor.mouse_event)
             self.__avoidGarbage.append(cursor)
             self.__avoidGarbage.append(conn)
-        
-            # for r in range(0, self.__rows, self.__rows//5):
-            #     for c in range(0, self.__cols, self.__cols//5):
-            #         text = text_function((r,c))
-            #         if text is not None:
-            #             plt.text(r, c, text, { "color": "green"})
             
-        ax.imshow(np.fliplr(scipy.ndimage.rotate(self.__data, 90*3, axes=(1, 0))), interpolation='nearest')
+        ax.imshow(self.__data, interpolation='nearest')
         
         return fig, ax
         
@@ -206,7 +240,7 @@ class RgbImage:
         if size is not None:
             new_img = new_img.resize(size)
             
-        matrix = Matrix.FromPredicate(new_img.size[0], new_img.size[1], lambda c: new_img.getpixel(c))
+        matrix = Matrix.FromPredicate(new_img.size[1], new_img.size[0], lambda c: new_img.getpixel((c[1], c[0])))
         return RgbImage(matrix)
 
     @staticmethod
@@ -215,7 +249,7 @@ class RgbImage:
         return RgbImage.fromPilImage(Image.open(img_path), size)
         
     @staticmethod
-    def FromData(matrix: Matrix):
+    def FromPixelMatrix(matrix: Matrix):
         
         return RgbImage(matrix)    
       
@@ -240,6 +274,29 @@ class ThermalImage:
         self.__rows, self.__cols = matrix.rows(), matrix.cols()
         self.__thermal_image = matrix.copy()
         
+    def matrix(self):
+        return self.__thermal_image
+    
+    def getTemperatureInfo(self):
+        
+        all_temperatures = self.__thermal_image.toValuesList()
+        temperature_average = sum(all_temperatures) / len(all_temperatures)
+        min_temperature     = min(all_temperatures)
+        max_temperature     = max(all_temperatures)
+        return temperature_average, min_temperature, max_temperature
+      
+    def toRgbImage(self):
+        
+        np_old_img  = np.array(self.__thermal_image.toMatrix())
+        np_new_arr  = np.zeros((self.__rows, self.__cols), dtype=np.uint8)
+        np_new_img  = np.uint8(cv2.normalize(np_old_img, np_new_arr, 0, 255, cv2.NORM_MINMAX))
+        colored_img = cv2.applyColorMap(np_new_img, cv2.COLORMAP_MAGMA).tolist()
+        
+        return RgbImage.FromPixelMatrix(Matrix.FromPredicate(len(colored_img[0]), len(colored_img), lambda c: tuple(colored_img[c[1]][c[0]])))
+    
+    def toRelativeThermalImage(self, offset: float):
+          
+        return ThermalImage(Matrix.FromPredicate(self.__rows, self.__cols, lambda c: self.__thermal_image.get(c) - offset))
     
     @staticmethod
     def get_closest_color_from_rgb(color_palette, rgb_triplet: tuple):
@@ -266,12 +323,12 @@ class ThermalImage:
         return min_colours[min(min_colours.keys())]
                
     @staticmethod
-    def FromData(rgb_image: RgbImage, color_palette : list):
+    def FromRgbImage(rgb_image: RgbImage, color_palette : list):
         
         matrix = rgb_image.matrix()
         
         return (
-            ThermalImage(Matrix.FromPredicate(matrix.rows(), matrix.cols(), lambda c: 
+            RgbImage(Matrix.FromPredicate(matrix.rows(), matrix.cols(), lambda c: 
                 ThermalImage.get_closest_color_from_rgb(color_palette, matrix.get(c))["rgb"]    
             )),
             ThermalImage(Matrix.FromPredicate(matrix.rows(), matrix.cols(), lambda c: 
@@ -279,32 +336,15 @@ class ThermalImage:
             ))
         )
 
-    def matrix(self):
-        return self.__thermal_image
-    
-    def getTemperatureInfo(self):
-        
-        all_temperatures = self.__thermal_image.toValuesList()
-        temperature_average = sum(all_temperatures) / len(all_temperatures)
-        min_temperature     = min(all_temperatures)
-        max_temperature     = max(all_temperatures)
-        return temperature_average, min_temperature, max_temperature
-    
-class RelativeThermalImage:
-    
-    def __init__(self, matrix: Matrix):
-            
-        self.__rows, self.__cols = matrix.rows(), matrix.cols()
-        self.__grouped_relative_thermal_image = matrix.copy()
-     
     @staticmethod
-    def FromData(grouped_thermal_image: ThermalImage, transformation_coeff: float):
-
-        matrix = grouped_thermal_image.matrix()        
-        return RelativeThermalImage(Matrix.FromPredicate(matrix.rows(), matrix.cols(), lambda c: matrix.get(c) - transformation_coeff))
-
-    def matrix(self):
-        return self.__grouped_relative_thermal_image
+    def FromThermalArray(thermal_array : Matrix):
+        
+        thermal_image = ThermalImage(Matrix.FromPredicate(len(thermal_array), len(thermal_array[0]), lambda c: int(thermal_array[c[0]][c[1]])))
+        
+        return (
+            thermal_image.toRgbImage(),
+            thermal_image
+        )
 
 class LeakMask:
     
@@ -408,7 +448,7 @@ class LeakMask:
         return result
         
     @staticmethod
-    def FromData(image_view: RgbImage, relative_thermal_image: RelativeThermalImage, leak_offset: float):
+    def FromData(image_view: RgbImage, relative_thermal_image: ThermalImage, leak_offset: float):
         
         # Leak detection
         matrix = relative_thermal_image.matrix()
@@ -433,7 +473,7 @@ class LeakMask:
             })
 
         return (
-            RgbImage.FromData(Matrix.FromPredicate(matrix.rows(), matrix.cols(), lambda c: (255, 0, 0) if c in too_hot_coords else ((0, 0, 255) if c in too_cold_coords else image_view.matrix().get(c)))),
+            RgbImage.FromPixelMatrix(Matrix.FromPredicate(matrix.rows(), matrix.cols(), lambda c: (255, 0, 0) if c in too_hot_coords else ((0, 0, 255) if c in too_cold_coords else image_view.matrix().get(c)))),
             LeakMask(Matrix.FromPredicate(matrix.rows(), matrix.cols(), lambda c: c in too_hot_coords or c in too_cold_coords)),
             results
         )
@@ -443,8 +483,8 @@ class LeakMask:
     
 if __name__ == "__main__":
 
-    path =  "C:/Users/Ewen/Documents/Ewen/OsloMet/ThermalLeaks/Thermal-Leaks-Detection/images/"
-    path += "IR001702_JPG.rf.2f14dd347d5685dc7f49b18ba0d21f61.jpg"
+    path =  "test.png"
     
     detector = ThermalIssuesDetector()
-    detector.detect(img=Image.open(path), show=True)
+    detector.detectFromImage(img=Image.open(path), show=True)
+    # detector.detectFromArray(l, show=True)

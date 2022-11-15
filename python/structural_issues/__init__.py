@@ -8,7 +8,7 @@ class StructuralIssuesDetector:
         self.__model  = torch.hub.load('ultralytics/yolov5', 'custom', path=model_path)
         self.__model.conf = 0.3
 
-    def detect(self, img : Image):
+    def detectFromImage(self, img : Image):
     	
         # Make prediction
         results         = self.__model([img])

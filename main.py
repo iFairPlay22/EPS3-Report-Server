@@ -69,8 +69,8 @@ def uploadReportFiles(data : dict, normal_initial_file : Image, thermal_initial_
 	result_data_full_path           = os.path.join(base_folder_path, STORAGE_RESULT_DATA_FILE_NAME   + "." + "json")
 	
 	# Make detections
-	normal_result_image,  normal_predictions  = STRUCTURAL_ISSUES_DETECTOR.detect(normal_initial_file)
-	thermal_result_image, thermal_predictions = THERMAL_ISSUES_DETECTOR.detect(thermal_initial_file)
+	normal_result_image,  normal_predictions  = STRUCTURAL_ISSUES_DETECTOR.detectFromImage(normal_initial_file)
+	thermal_result_image, thermal_predictions = THERMAL_ISSUES_DETECTOR.detectFromImage(thermal_initial_file)
 
 	# Save result images
 	normal_initial_file.save(normal_initial_image_full_path)
@@ -319,7 +319,7 @@ def historic_report(building_name : str, row : int, column : int):
 	building_folder_full_path = os.path.join(STORAGE_FOLDER, u.sanitizeFileName(building_name))
 	for (date_file_path, date_file_full_path) in u.subFolders(building_folder_full_path):		
 		day_string = date_file_path
-		analysis = getPartialAnalysis(building_name, day_string, row, column);
+		analysis = getPartialAnalysis(building_name, day_string, row, column)
 		day_analysis[getReadableDate(day_string)] = analysis
 
 		predictions_count = dict(Counter([ prediction["class"] for prediction in analysis["predictions"] ]))
