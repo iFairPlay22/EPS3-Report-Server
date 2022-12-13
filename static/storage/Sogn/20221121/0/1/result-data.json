@@ -1,0 +1,32 @@
+{
+    "metadata": {
+        "building_name": "Sogn",
+        "day": "20221121",
+        "time": "150159",
+        "row": "0",
+        "column": "1"
+    },
+    "images": {
+        "normal": {
+            "initial": "static/storage/Sogn/20221121/0/1/normal-initial-image.png",
+            "result": "static/storage/Sogn/20221121/0/1/normal-result-image.png"
+        },
+        "thermal": {
+            "initial": "static/storage/Sogn/20221121/0/1/thermal-initial-image.png",
+            "result": "static/storage/Sogn/20221121/0/1/thermal-result-image.png"
+        }
+    },
+    "predictions": [
+        {
+            "confidence": 55,
+            "class": "crack",
+            "box": {
+                "xmin": 0,
+                "ymin": 0,
+                "xmax": 1,
+                "ymax": 1
+            }
+        }
+    ],
+    "issues_nb": { "crack": 1 }
+}

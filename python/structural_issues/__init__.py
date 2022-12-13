@@ -1,17 +1,22 @@
 import torch 
-import os
 from PIL import Image
+from python.images_management import getPilImage
 
 class StructuralIssuesDetector:
 
     def __init__(self, model_path: str):
         self.__model  = torch.hub.load('ultralytics/yolov5', 'custom', path=model_path)
-        self.__model.conf = 0.3
+        self.__model.conf = 0.4
+        
+    def detectFromArray(self, arr: list):
+        
+        initial_img = getPilImage(arr)
+        return self.detectFromImage(initial_img)
 
-    def detectFromImage(self, img : Image):
+    def detectFromImage(self, initial_img : Image):
     	
         # Make prediction
-        results         = self.__model([img])
+        results         = self.__model([initial_img])
         results_data    = results.pandas().xyxy[0]
         result_img_arr  = results.render()[0]
         result_image    = Image.fromarray(result_img_arr)
@@ -31,4 +36,4 @@ class StructuralIssuesDetector:
             for i in range(results_data.shape[0])
         ]
 
-        return result_image, result_predictions
+        return initial_img, result_image, result_predictions

@@ -1,14 +1,13 @@
-from flask import Flask, redirect, url_for, request, render_template, send_file
+from flask import Flask, url_for, request, render_template
 from python.structural_issues import StructuralIssuesDetector
-from python.thermal_issues import ThermalIssuesDetector
+from python.thermal_issues import ThermalIssuesDetector, RgbImage
+from python.file_management import FileManagement
+from PIL import Image
 from datetime import datetime
-import io
+from tqdm import tqdm
 import os
 from collections import Counter
 import json
-import torch 
-from PIL import Image
-import util as u
 import ssl
 ssl._create_default_https_context = ssl._create_unverified_context
 
@@ -33,11 +32,16 @@ STORAGE_RESULT_DATA_FILE_NAME   		= "result-data"
 STRUCTURAL_ISSUES_MODEL_WEIGHTS_PATH 	= os.path.join(ASSETS_FOLDER, "weights/best_weights.pt")
 STRUCTURAL_ISSUES_DETECTOR  			= StructuralIssuesDetector(STRUCTURAL_ISSUES_MODEL_WEIGHTS_PATH)
 
+# initial_img, result_image, result_predictions = STRUCTURAL_ISSUES_DETECTOR.detectFromImage(Image.open("_.jpeg"))
+# initial_img.show()
+# exit()
+
+
 # Thermal issues detector
 THERMAL_ISSUES_DETECTOR					= ThermalIssuesDetector()
 
 # Launch app
-u.createFoldersIfNotExists([ TEMPLATES_FOLDER, STATIC_FOLDER, ASSETS_FOLDER, STORAGE_FOLDER ])
+FileManagement.createFoldersIfNotExists([ TEMPLATES_FOLDER, STATIC_FOLDER, ASSETS_FOLDER, STORAGE_FOLDER ])
 app = Flask(__name__, template_folder=TEMPLATES_FOLDER, static_folder=STATIC_FOLDER)
 
 ################################################################################################
@@ -45,41 +49,41 @@ app = Flask(__name__, template_folder=TEMPLATES_FOLDER, static_folder=STATIC_FOL
 ################################################################################################
 
 # Upload the report files in the STORAGE_FOLDER
-def uploadReportFiles(data : dict, normal_initial_file : Image, thermal_initial_file : Image):
+def uploadReportFiles(data : dict, normal_arr : list, thermal_arr : list):
 
 	# Sanitize data
 	date_time             = datetime.now()
-	data["date"]          = u.sanitizeFileName(date_time.strftime('%Y-%m-%d'))
-	data["time"]          = u.sanitizeFileName(date_time.strftime('%H-%M-%S'))
-	data["building_name"] = u.sanitizeFileName(data["building_name"])
-	data["row"] 		  = u.sanitizeFileName(int(data["row"]))
-	data["column"] 		  = u.sanitizeFileName(int(data["column"]))
+	data["date"]          = FileManagement.sanitizeFileName(date_time.strftime('%Y-%m-%d'))
+	data["time"]          = FileManagement.sanitizeFileName(date_time.strftime('%H-%M-%S'))
+	data["building_name"] = FileManagement.sanitizeFileName(data["building_name"])
+	data["row"] 		  = FileManagement.sanitizeFileName(int(data["row"]))
+	data["column"] 		  = FileManagement.sanitizeFileName(int(data["column"]))
 
 	# Create base folder
 	base_folder_path = os.path.join(STORAGE_FOLDER, data["building_name"], data["date"], data["row"], data["column"]) 
-	if u.folderExists(base_folder_path):
+	if FileManagement.folderExists(base_folder_path):
 		raise Exception("Data already exists for the id (building_name, time, row, column)")
-	u.createFolderIfNotExists(base_folder_path)
+	FileManagement.createFolderIfNotExists(base_folder_path)
 
 	# Create paths
-	normal_initial_image_full_path  = os.path.join(base_folder_path, STORAGE_NORMAL_INITIAL_IMAGE_FILE_NAME + "." + normal_initial_file.format) 
-	normal_result_image_full_path   = os.path.join(base_folder_path, STORAGE_NORMAL_RESULT_IMAGE_FILE_NAME  + "." + normal_initial_file.format)
-	thermal_initial_image_full_path = os.path.join(base_folder_path, STORAGE_THERMAL_INITIAL_IMAGE_FILE_NAME + "." + thermal_initial_file.format)
-	thermal_result_image_full_path  = os.path.join(base_folder_path, STORAGE_THERMAL_RESULT_IMAGE_FILE_NAME  + "." + thermal_initial_file.format)
+	normal_initial_image_full_path  = os.path.join(base_folder_path, STORAGE_NORMAL_INITIAL_IMAGE_FILE_NAME  + ".png") 
+	normal_result_image_full_path   = os.path.join(base_folder_path, STORAGE_NORMAL_RESULT_IMAGE_FILE_NAME   + ".png")
+	thermal_initial_image_full_path = os.path.join(base_folder_path, STORAGE_THERMAL_INITIAL_IMAGE_FILE_NAME + ".png")
+	thermal_result_image_full_path  = os.path.join(base_folder_path, STORAGE_THERMAL_RESULT_IMAGE_FILE_NAME  + ".png")
 	result_data_full_path           = os.path.join(base_folder_path, STORAGE_RESULT_DATA_FILE_NAME   + "." + "json")
 	
 	# Make detections
-	normal_result_image,  normal_predictions  = STRUCTURAL_ISSUES_DETECTOR.detectFromImage(normal_initial_file)
-	thermal_result_image, thermal_predictions = THERMAL_ISSUES_DETECTOR.detectFromImage(thermal_initial_file)
+	normal_initial_img, normal_result_image, normal_result_predictions = STRUCTURAL_ISSUES_DETECTOR.detectFromArray(normal_arr)
+	thermal_initial_img, thermal_result_image, thermal_result_predictions = THERMAL_ISSUES_DETECTOR.detectFromArray(thermal_arr)
 
 	# Save result images
-	normal_initial_file.save(normal_initial_image_full_path)
-	thermal_initial_file.save(thermal_initial_image_full_path)
+	normal_initial_img.save(normal_initial_image_full_path)
+	thermal_initial_img.save(thermal_initial_image_full_path)
 	normal_result_image.save(normal_result_image_full_path)
 	thermal_result_image.save(thermal_result_image_full_path)
 
 	# Merge predictions for json
-	all_predictions = normal_predictions + thermal_predictions
+	all_predictions = normal_result_predictions + thermal_result_predictions
 	all_predictions_class_name = map(lambda pred: pred["class"], all_predictions)
 	result_json = {
 		"metadata": {
@@ -114,7 +118,7 @@ def uploadReportFiles(data : dict, normal_initial_file : Image, thermal_initial_
 def getPartialAnalysis(building_name : str, day_string : str, row : int, column : int):
 		
 	# Get JSON data
-	analysis_json = os.path.join(STORAGE_FOLDER, u.sanitizeFileName(building_name), u.sanitizeFileName(day_string), u.sanitizeFileName(row), u.sanitizeFileName(column), STORAGE_RESULT_DATA_FILE_NAME + ".json")
+	analysis_json = os.path.join(STORAGE_FOLDER, FileManagement.sanitizeFileName(building_name), FileManagement.sanitizeFileName(day_string), FileManagement.sanitizeFileName(row), FileManagement.sanitizeFileName(column), STORAGE_RESULT_DATA_FILE_NAME + ".json")
 	with open(analysis_json, "r") as f:
 		analysis_data = json.load(f)
 
@@ -127,9 +131,9 @@ def getCompleteAnalysis(building_name : str, day_string : str):
 
 	# All analysis results
 	analysis_results = []
-	main_directory = os.path.join(STORAGE_FOLDER, u.sanitizeFileName(building_name), u.sanitizeFileName(day_string))
-	for (row_folder_name, row_folder_full_path) in u.subFolders(main_directory):
-		for (col_folder_name, col_folder_full_path) in u.subFolders(row_folder_full_path):
+	main_directory = os.path.join(STORAGE_FOLDER, FileManagement.sanitizeFileName(building_name), FileManagement.sanitizeFileName(day_string))
+	for (row_folder_name, row_folder_full_path) in FileManagement.subFolders(main_directory):
+		for (col_folder_name, col_folder_full_path) in FileManagement.subFolders(row_folder_full_path):
 			# An analysis result
 			analysis_results.append(getPartialAnalysis(building_name, day_string, row_folder_name, col_folder_name))
 	result["analysis_results"] = analysis_results
@@ -165,7 +169,7 @@ def getAllAnalysisDatesOfBuilding(building_name : str):
 			"program" : date_file_path
 		}
 		for (date_file_path, date_file_full_path) 
-		in u.subFolders(os.path.join(STORAGE_FOLDER, u.sanitizeFileName(building_name)))
+		in FileManagement.subFolders(os.path.join(STORAGE_FOLDER, FileManagement.sanitizeFileName(building_name)))
 	]
 
 # Get a readable data from the storage date
@@ -179,8 +183,8 @@ def getReadableDate(storageDate : str):
 # Delete completely the file storage
 @app.route('/api/clear', methods=['DELETE'])
 def apiClear():
-	u.deleteFoldersRecursively(STORAGE_FOLDER)
-	u.createFolderIfNotExists(STORAGE_FOLDER)
+	FileManagement.deleteFoldersRecursively(STORAGE_FOLDER)
+	FileManagement.createFolderIfNotExists(STORAGE_FOLDER)
 
 	return "Cleared"
 		
@@ -188,136 +192,44 @@ def apiClear():
 #####> POST REQUESTS
 ################################################################################################
 
-# Upload images from HTTP
-@app.route('/api/upload/from-body/<building_name>', methods=['POST'])
-def apiUploadFromBody(building_name : str):
-
-	# Requests
-	if not("normal-image" in request.files):
-		return 'No normal image file found... Missing parameter "normal-image"'
-
-	if not("thermal-image" in request.files):
-		return 'No thermal image file found... Missing parameter "thermal-image"'
-
-	if not("row" in request.form):
-		return 'Missing parameter "row"'
-
-	if not("column" in request.form):
-		return 'Missing parameter "column"'
-
-	# Result
-	# We assume that:
-	# > each "row"     match the serie "0", "1", "2", "3", ..., "r"
-	# > each "column"  match the serie "0", "1", "2", "3", ..., "r"
-	# > ("0", "0") is the bottom left corner of the wall
-	# > ("r", "c") is the top right corner of the wall
-	return uploadReportFiles(
-		{
-			"building_name": str(building_name),
-			"row"          : int(request.form["row"]),
-			"column"       : int(request.form["column"])
-		}, 
-		Image.open(request.files["normal-image"].stream), 
-		Image.open(request.files["thermal-image"].stream)
-	) 
-
-# Upload images from FILE STORAGE
-@app.route('/api/upload/from-storage/<building_name>', methods=['POST'])
-def apiUploadFromStorage(building_name : str):
-
-	# Requests
-	if not("folder_path" in request.form):
-		return "No args folder_path found..."
-
-	folder_path = request.form["folder_path"]
-	if not(os.path.isdir(folder_path)):
-		return f'"{folder_path}" is not a folder...'
-
-	sub_folders = u.subFolders(folder_path)
-	if len(sub_folders) == 0:
-		return "No file found..."
-
-	# Result
-	# We assume that:
-	# > each subfolder(1) named "0", "1", "2", "3", ..., "r" corresponds to the row    "0", "1", "2", "3", ..., "r"
-	# > each subfolder(2) named "0", "1", "2", "3", ..., "c" corresponds to the column "0", "1", "2", "3", ..., "c"
-	# > /(1)/(2)/normal.*  corresponds to the image taken with a normal camera 
-	# > /(1)/(2)/thermal.* corresponds to the image taken with a thermal camera
-	# > ("0", "0") is the bottom left corner of the wall
-	# > ("r", "c") is the top right corner of the wall
-	result = {}
-
-	row = 0
-	for (row_folder_path, row_folder_full_path) in sub_folders:
-		
-		column = 0
-		for (col_folder_path, col_folder_full_path) in u.subFolders(row_folder_full_path):
-    			
-			thermalImage = None
-			normalImage  = None
-			for (col_image_path, col_image_full_path) in u.subFiles(col_folder_full_path):
-				if (col_image_path.startswith("normal")):
-					normalImage = col_image_full_path
-				if (col_image_path.startswith("thermal")):
-					thermalImage = col_image_full_path
-
-			if normalImage is None:
-				raise Exception('Missing normal image named "normal.*" in folder ' + col_folder_full_path);
-
-			if thermalImage is None:
-				raise Exception('Missing thermal image named "thermal.*" in folder ' + col_folder_full_path);
-
-			print("Uploading {}, row {}, column {}".format(building_name, row, column))
-			result[col_image_full_path] = uploadReportFiles(
-				{
-					"building_name": str(building_name),
-					"row"          : row,
-					"column"       : column
-				}, 
-				Image.open(normalImage),
-				Image.open(thermalImage),
-			)
-		
-			column += 1
-		row += 1
-		
-	return result
-
-# TODO
-# See the result image of a manual prediction
-@app.route('/api/manual-prediction', methods=['POST'])
-def manualPrediction():
-
-	# Requests
-	if not("file" in request.files):
-		return 'No file "file" found...'
+# Upload images
+@app.route('/api/upload', methods=['POST'])
+def apiUpload():
     
-	results_data, result_image = detectIssues(Image.open(request.files["file"].stream))
+	json_data = request.json
+	building_name = json_data["building_name"]
+	images = json_data["images"]
+ 
+	for image_data in images:
+     
+		row, col, normal_arr, thermal_arr = image_data["row"], image_data["col"], image_data["normal_array"], image_data["thermal_array"]
+     
+		uploadReportFiles(
+			{
+				"building_name": building_name,
+				"row"          : row,
+				"column"       : col
+			}, 
+			normal_arr,
+			thermal_arr
+		)
 
-	img_io = io.BytesIO()
-	result_image.save(img_io, 'JPEG', quality=70)
-	img_io.seek(0)
-	return send_file(img_io, mimetype='image/jpeg')
+	# TODO: return the link		
+	return ""
 
 ################################################################################################
 #####> GET REQUESTS
 ################################################################################################
 
-# TODO
-# Manual prediction view
-@app.route('/manual-upload', methods=['GET'])
-def manualUpload():
-	return render_template("pages/manual_upload.html")
-
 # Historic report (historic evolution of a wall cell)
 @app.route('/historic-report/<building_name>/<row>/<column>', methods=['GET'])
 def historic_report(building_name : str, row : int, column : int):
-    	
+    
 	day_analysis = {}
 	day_predictions_count = []
 
-	building_folder_full_path = os.path.join(STORAGE_FOLDER, u.sanitizeFileName(building_name))
-	for (date_file_path, date_file_full_path) in u.subFolders(building_folder_full_path):		
+	building_folder_full_path = os.path.join(STORAGE_FOLDER, FileManagement.sanitizeFileName(building_name))
+	for (date_file_path, date_file_full_path) in FileManagement.subFolders(building_folder_full_path):		
 		day_string = date_file_path
 		analysis = getPartialAnalysis(building_name, day_string, row, column)
 		day_analysis[getReadableDate(day_string)] = analysis
@@ -356,7 +268,7 @@ def home():
 
 	# For each buildings
 	main_directory = STORAGE_FOLDER
-	for (building_path, building_full_path) in u.subFolders(main_directory):
+	for (building_path, building_full_path) in FileManagement.subFolders(main_directory):
 		building_name = building_path
 
 		# Add an entry
@@ -370,6 +282,23 @@ def home():
 		reports=reports
 	)
 
+# Test structural defects AI
+@app.route('/test/structural_defects', methods=['GET'])
+def test_structural_defects_ai():
+
+	search_folder = "/Users/ewenbouquet/Downloads/initial"
+	insert_folder = "/Users/ewenbouquet/Downloads/result"
+ 
+	FileManagement.createFoldersIfNotExists([search_folder, insert_folder])
+
+	for (file_name, file_full_path) in tqdm(FileManagement.subFiles(search_folder)):
+		img = Image.open(file_full_path)
+		init_img, result_img, result_arr = STRUCTURAL_ISSUES_DETECTOR.detectFromImage(img)
+		result_img.save(os.path.join(insert_folder, file_name))
+  
+	return "Done"
+  
+  
 ################################################################################################
 #####> LAUNCH SERVER
 ################################################################################################

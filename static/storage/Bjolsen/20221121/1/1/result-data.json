@@ -1,0 +1,21 @@
+{
+    "metadata": {
+        "building_name": "Bjolsen",
+        "day": "20221121",
+        "time": "150159",
+        "row": "1",
+        "column": "1"
+    },
+    "images": {
+        "normal": {
+            "initial": "static/storage/Bjolsen/20221121/1/1/normal-initial-image.png",
+            "result": "static/storage/Bjolsen/20221121/1/1/normal-result-image.png"
+        },
+        "thermal": {
+            "initial": "static/storage/Bjolsen/20221121/1/1/thermal-initial-image.png",
+            "result": "static/storage/Bjolsen/20221121/1/1/thermal-result-image.png"
+        }
+    },
+    "predictions": [],
+    "issues_nb": {}
+}
